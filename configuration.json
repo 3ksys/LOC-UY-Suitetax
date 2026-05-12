@@ -1,0 +1,27 @@
+{
+  "baseUrl": "/SuiteScripts",
+  "paths": {
+    "L56/utilidades": "L56 - Utilidades",
+"L54/utilidades": "L54 - Utilidades",
+    "3K/utilities": "3K - Utilities",
+    "L56/funcionalidadesFiscales": "L56 - Funcionalidades Fiscales",
+    "L54/funcionalidadesFiscales": "L54 - Funcionalidades Fiscales",
+    "EC/validacion": "EC - Validacion Unicaidad",
+    "L593/funcionalidadesFiscales": "L593 - Funcionalidades Fiscales",
+    "EC/generarXML(Lib)": "EC - generarXML(Lib)",
+    "L54/ValidarPercepciones": "L54 - Validar Percepciones",
+    "L54/ValidarPercepcionesCL": "L54 - Validar Percepciones CL",
+"L598/utilities": "L598 - Utilities",
+"L54/Padron": "L54 - LIB Padrones",
+"L54/LIBTransaccionCliente": "L54 - LIB - Transacción (Cliente)",
+"L54/LIBGenerarConceptoTransaccion": "L54 - LIB - Generar Concepto Transaccion",
+"L54/LIBFormasPagoTransaccion": "L54 - LIB - Formas Pago Transaccion (Cliente)",
+"L54/LIBCBUEmisorFCE": "L54 - LIB - CBU Emisor FCE (Cliente)",
+"L54/LIBVerificarJurisdiccionDireccion": "L54 - LIB - Verificar Jurisdiccion Direccion",
+"L54/LIBValidarClienteFCE": "L54 - LIB - Validar Cliente FCE (Cl)",
+"L54/LIBVerificarTransaccionReferencia": "L54 - LIB - Verificar Transaccion Referencia",
+"L54/LIBValidarImportePorTipoContribuyente": "L54 - LIB - Validar Importe por Tipo Contribuyente",
+"L54/LIBValidacionesPercepciones": "L54 - LIB - Validaciones Percepciones",
+"L54/LIBSeteoInicialJurisdicciones": "L54 - LIB Seteo Inicial Jurisdicciones Lineas (Vtas) (CL)"
+  }
+}

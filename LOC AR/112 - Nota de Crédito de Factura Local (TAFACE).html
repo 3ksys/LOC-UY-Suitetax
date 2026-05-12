@@ -1,0 +1,123 @@
+<#assign nroLineaItem = 0>
+<#assign nroLineaDescRecarg = 0>
+<#assign nroLineaItemReferencia = 0>
+<Pxmlentrada xmlns="TAFACE">
+	<DGI>
+		<IDDocTipoCFE>${informacionTransaccion.informacionEncabezado.tipoCFE}</IDDocTipoCFE>
+		<IDDocFchEmis>${informacionTransaccion.fechaComprobanteFinal}</IDDocFchEmis>
+		<IDDocFmaPago>${informacionTransaccion.informacionEncabezado.formaPago}</IDDocFmaPago>
+		<EMIRUCEmisor>${informacionTransaccion.informacionAdicional.rucEmisor}</EMIRUCEmisor>
+		<EMIRznSoc>${informacionTransaccion.informacionAdicional.razonSocialEmisor}</EMIRznSoc>
+		<EMINomComercial>${informacionTransaccion.informacionAdicional.nombreComercial}</EMINomComercial>
+		<EMICorreoEmisor>${informacionTransaccion.informacionAdicional.correoElectronico}</EMICorreoEmisor>
+		<EMIEmiSucursal>${informacionTransaccion.nombreSucursalDGI}</EMIEmiSucursal>
+		<EMICdgDGISucur>${informacionTransaccion.codigoSucursalDGI}</EMICdgDGISucur>
+		<EMIDomFiscal>${informacionTransaccion.informacionAdicional.domicilioFiscalEmisor}</EMIDomFiscal>
+		<EMICiudad>${informacionTransaccion.informacionAdicional.ciudadEmisor}</EMICiudad>
+		<EMIDepartamento>${informacionTransaccion.informacionAdicional.departamento}</EMIDepartamento>
+		<RECTipoDocRecep>${informacionTransaccion.informacionCliente.clienteTipoDocumento}</RECTipoDocRecep>
+		<RECCodPaisRecep>${informacionTransaccion.informacionCliente.clienteCodigoPais}</RECCodPaisRecep>
+		<RECDocRecep>${informacionTransaccion.informacionCliente.clienteNumeroDocUruguayo}</RECDocRecep>
+		<RECDocRecepExtranjero>${informacionTransaccion.informacionCliente.clienteNumeroDocExtranjero}</RECDocRecepExtranjero>
+		<RECRznSocRecep>${informacionTransaccion.informacionCliente.clienteNombre}</RECRznSocRecep>
+		<RECDirRecep>${informacionTransaccion.informacionCliente.clienteDireccion}</RECDirRecep>
+		<RECCiudadRecep>${informacionTransaccion.informacionCliente.clienteCiudad}</RECCiudadRecep>
+		<RECDeptoRecep>${informacionTransaccion.informacionCliente.clienteProvincia}</RECDeptoRecep>
+		<RECPaisRecep>${informacionTransaccion.informacionCliente.clientePais}</RECPaisRecep>
+                <RECLugarDestinoEntrega>${informacionTransaccion.informacionCliente.clienteLugarEntrega?string[0..*100]}</RECLugarDestinoEntrega>
+                <RECNroOrdenCompra>${informacionTransaccion.informacionEncabezado.nroCompraOrden?string[0..*50]}</RECNroOrdenCompra>
+		<RECCP>${informacionTransaccion.informacionCliente.clienteCodigoPostal}</RECCP>
+		<TOTTpoMoneda>${informacionTransaccion.informacionTotalesEncabezado.codigoMonedaTransaccion}</TOTTpoMoneda>
+		<TOTTpoCambio>${informacionTransaccion.informacionTotalesEncabezado.tipoCambio}</TOTTpoCambio>
+		<TOTMntNoGrv>${informacionTransaccion.informacionTotalesEncabezado.totalMontoNoGravado}</TOTMntNoGrv>
+		<TOTMntExpoyAsim>${informacionTransaccion.informacionTotalesEncabezado.totalMontoExpYAsimiladas}</TOTMntExpoyAsim>
+		<TOTMntImpuestoPerc>${informacionTransaccion.informacionTotalesEncabezado.totalMontoImpuestoPercibido}</TOTMntImpuestoPerc>
+		<TOTMntIVaenSusp>${informacionTransaccion.informacionTotalesEncabezado.totalMontoIVASuspenso}</TOTMntIVaenSusp>
+		<TOTMntNetoIvaTasaMin>${informacionTransaccion.informacionTotalesEncabezado.totalMontoIVATasaMinima}</TOTMntNetoIvaTasaMin>
+		<TOTMntNetoIVATasaBasica>${informacionTransaccion.informacionTotalesEncabezado.totalMontoIVATasaBasica}</TOTMntNetoIVATasaBasica>
+		<TOTMntNetoIVAOtra>${informacionTransaccion.informacionTotalesEncabezado.totalMontoIVAOtraTasa}</TOTMntNetoIVAOtra>
+		<TOTIVATasaMin>${informacionTransaccion.informacionTotalesEncabezado.porcentajeTasaMinima}</TOTIVATasaMin>
+		<TOTIVATasaBasica>${informacionTransaccion.informacionTotalesEncabezado.porcentajeTasaBasica}</TOTIVATasaBasica>
+		<TOTMntIVATasaMin>${informacionTransaccion.informacionTotalesEncabezado.totalIVATasaMinima}</TOTMntIVATasaMin>
+		<TOTMntIVATasaBasica>${informacionTransaccion.informacionTotalesEncabezado.totalIVATasaBasica}</TOTMntIVATasaBasica>
+		<TOTMntIVAOtra>${informacionTransaccion.informacionTotalesEncabezado.totalMontoIVAOtraTasa}</TOTMntIVAOtra>
+		<TOTMntTotal>${informacionTransaccion.informacionTotalesEncabezado.totalMontoTotal}</TOTMntTotal>
+		<TOTMntTotRetenido>${informacionTransaccion.informacionTotalesEncabezado.totalMontoRetenido}</TOTMntTotRetenido>
+		<TOTMntTotCredFisc>${informacionTransaccion.informacionTotalesEncabezado.totalCreditosFiscales}</TOTMntTotCredFisc>
+		<TOTCantLinDet>${informacionTransaccion.informacionTotalesEncabezado.cantidadLineas}</TOTCantLinDet>
+		<TOTMontoNF>${informacionTransaccion.informacionTotalesEncabezado.montoNoFacturable}</TOTMontoNF>
+		<TOTMntPagar>${informacionTransaccion.informacionTotalesEncabezado.montoTotalAPagar}</TOTMntPagar>
+		<Detalles>
+			<#list informacionTransaccion.detalleLineas as detalleLineas>
+			<#assign nroLineaItem += 1>
+			<Detalle>
+				<DETNroLinDet>${nroLineaItem}</DETNroLinDet>
+				<#if detalleLineas.tipoCodigo?length != 0 && detalleLineas.codigoGln?length != 0>
+                                <DETCodItems>
+                                         <DETCodItem>
+                                                <DETTpoCod>${detalleLineas.tipoCodigo}</DETTpoCod>
+                                                <DETCod>${detalleLineas.codigoGln}</DETCod>
+                                         </DETCodItem>
+                                </DETCodItems>
+                                </#if>
+				<DETIndFact>${detalleLineas.indicadorFacturacion}</DETIndFact>
+				<DETNomItem>${detalleLineas.nombreItem}</DETNomItem>
+				<DETDscItem>${detalleLineas.DescripcionAdicional}</DETDscItem>
+				<DETCantidad>${detalleLineas.cantidad}</DETCantidad>
+				<DETUniMed>${detalleLineas.unidadMedida}</DETUniMed>
+				<DETPrecioUnitario>${detalleLineas.precioUnitario}</DETPrecioUnitario>
+				<DETDescuentoPct>${detalleLineas.descuentoEnPorcentaje}</DETDescuentoPct>
+				<DETDescuentoMonto>${detalleLineas.montoDescuento}</DETDescuentoMonto>
+				<DETRecargoPct>${detalleLineas.recargoEnPorcentaje}</DETRecargoPct>
+				<DETRecargoMnt>${detalleLineas.montoRecargo}</DETRecargoMnt>
+				<DETMontoItem>${detalleLineas.montoItem}</DETMontoItem>
+			</Detalle>
+			</#list>
+		</Detalles>
+		<#list informacionTransaccion.detalleDescyRecGlobal as detalleDescyRecGlobal>
+		<#assign nroLineaDescRecarg += 1>
+			<DscRcgGlobales>
+				<DscRcgGlobal>
+					<DRGNroLinDR>${nroLineaDescRecarg}</DRGNroLinDR>
+					<DRGTpoMovDR>${detalleDescyRecGlobal.tipoMovimiento}</DRGTpoMovDR>
+					<#--<DRGTpoDR></DRGTpoDR>-->
+					<DRGCodDR>${detalleDescyRecGlobal.codigo}</DRGCodDR>
+					<DRGGlosaDR>${detalleDescyRecGlobal.glosa}</DRGGlosaDR>
+					<DRGValorDR>${detalleDescyRecGlobal.valor}</DRGValorDR>
+					<DRGIndFactDR>${detalleDescyRecGlobal.indicadorFacturacion}</DRGIndFactDR>
+				</DscRcgGlobal>
+			</DscRcgGlobales>
+		</#list>
+		<Referencias>
+			<#list informacionTransaccion.detalleReferencia as detalleReferencia>
+			<#assign nroLineaItemReferencia += 1>
+			<Referencia>
+				<REFNroLinRef>${nroLineaItemReferencia}</REFNroLinRef>
+				<REFIndGlobal>${detalleReferencia.indicadorRefGlobal}</REFIndGlobal>
+				<REFTpoDocRef>${detalleReferencia.tipoCFE}</REFTpoDocRef>
+				<REFSerie>${detalleReferencia.serie}</REFSerie>
+				<REFNroCFERef>${detalleReferencia.numero}</REFNroCFERef>
+				<REFRazonRef>${detalleReferencia.razon}</REFRazonRef>
+				<REFFechaCFEref>${detalleReferencia.fecha}</REFFechaCFEref>
+			</Referencia>
+			</#list>
+		</Referencias>
+		<ADETextoADE>${informacionTransaccion.informacionAdenda.textoAdenda}</ADETextoADE>
+	</DGI>
+	<DATOSADICIONALES>
+		<EMPRESARUC>${informacionTransaccion.informacionAdicional.empresaRUC}</EMPRESARUC>
+		<SUCURSALNRO>${informacionTransaccion.informacionAdicional.sucursalNro}</SUCURSALNRO>
+		<CAJANRO>${informacionTransaccion.informacionAdicional.cajaNro}</CAJANRO>
+		<SOFTWAREFACTURADOR>${informacionTransaccion.informacionAdicional.softwareFacturador}</SOFTWAREFACTURADOR>
+		<VERSIONDESOFTWAREFACTURADOR>${informacionTransaccion.informacionAdicional.versionSoftwareFacturador}</VERSIONDESOFTWAREFACTURADOR>
+		<TRANSACCIONNRO>${informacionTransaccion.informacionAdicional.documentoNro}</TRANSACCIONNRO>
+		<DOCUMENTOORIGINALTIPO>${informacionTransaccion.tipoComprobanteURU}</DOCUMENTOORIGINALTIPO>
+		<DOCUMENTOORIGINALSERIE>${informacionTransaccion.sucursal}</DOCUMENTOORIGINALSERIE>
+		<DOCUMENTOORIGINALNRO>${informacionTransaccion.informacionAdicional.documentoNro}</DOCUMENTOORIGINALNRO>
+		<CAJERONRO>${informacionTransaccion.informacionAdicional.cajeroNro}</CAJERONRO>
+		<CLIENTENRO>${informacionTransaccion.informacionAdicional.clienteNumero}</CLIENTENRO>
+		<VENDEDORNRO>${informacionTransaccion.informacionAdicional.vendedorNumero}</VENDEDORNRO>
+		<TIPODENEGOCIO>${informacionTransaccion.informacionAdicional.tipoNegocio}</TIPODENEGOCIO>
+		<COTIZACIONUI>${informacionTransaccion.informacionAdicional.valorUnidadIndexada}</COTIZACIONUI>
+	</DATOSADICIONALES>
+</Pxmlentrada>

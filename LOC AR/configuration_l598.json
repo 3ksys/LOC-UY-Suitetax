@@ -1,0 +1,8 @@
+{
+  "baseUrl": "/SuiteScripts",
+  "paths": {
+    "L598/utilities": "L598 - Utilities",
+    "L598/funcionalidadesFiscales": "L598 - Funcionalidades Fiscales",
+    "URU/Validaciones_por_transaccion_mayor_a_5000_ui": "URU - Validaciones por transaccion mayor a 5000 ui (LIB)"
+  }
+}
