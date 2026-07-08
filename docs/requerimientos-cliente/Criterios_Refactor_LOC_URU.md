@@ -46,6 +46,9 @@ La IA detectará los siguientes problemas en el código existente:
 | Funciones sobrecomplejas | Mantenibilidad | Funciones con demasiada responsabilidad (más de 40 líneas o múltiples propósitos) que dificultan el testing y el debugging |
 | APIs deprecadas | Estándares | Uso de APIs de SuiteScript 2.0 o anteriores que tienen equivalente mejorado en SuiteScript 2.1 |
 | Falta de manejo de errores | Robustez | Bloques sin try/catch o sin logging adecuado que dificultan el diagnóstico en producción |
+| Filtros SS sin validación de nulos | Robustez | Saved Searches con filtros que utilizan variables sin validar previamente si son nulas o vacías, lo que puede generar errores en tiempo de ejecución o resultados incorrectos. |
+| SS ineficientes por exceso de columnas | Performance / GU | Saved Searches que recuperan más columnas de las necesarias. Se evaluará si conviene migrar a SuiteQL (SELECT específico) o a Analytics Workbooks según el caso de uso. |
+| **SS candidatas a migración SuiteQL / Workbooks ⚠** | Performance / GU | Identificación de Saved Searches que, por su volumen de datos, frecuencia de ejecución o complejidad, son candidatas a ser reemplazadas por SuiteQL o Analytics Workbooks. Se reportarán como hallazgo prioritario. |
 
 #  4. Criterios de Refactorización
 
@@ -59,6 +62,8 @@ Toda modificación propuesta debe cumplir OBLIGATORIAMENTE con el primer criteri
 | \#4 | Patrones NetSuite | Seguir patrones documentados por Oracle: entry points correctos, manejo de errores estándar, logging con N/log. |
 | \#5 | Legibilidad y mantenibilidad | Refactorizar funciones sobrecomplejas, mejorar nombres de variables y agregar comentarios donde la lógica no sea obvia. |
 | \#6 | Reutilización de código | Extraer lógica común a módulos compartidos para evitar duplicación entre scripts de la localización. |
+| \#7 | Cobertura sugerida por tipo de transacción | Se sugiere alcanzar como referencia un mínimo de 3 scripts de tipo User Event y 2 Client Scripts por tipo de transacción relevante. Este objetivo será validado con el equipo de Tekiio según la disponibilidad de scripts. |
+| **⚠ \#8** | **Cambios de entry point (afterSubmit → beforeSubmit)** | NO se aplican automáticamente. Si la IA detecta que una función debería moverse de afterSubmit a beforeSubmit (o viceversa), debe registrarlo como sugerencia y notificar a Tekiio para evaluación explícita. Estos cambios pueden tener impacto funcional no evidente y requieren validación antes de cualquier modificación. |
 
 #  5. Criterios de Medición
 
