@@ -15,10 +15,14 @@ Este documento define **cómo** se refactoriza cada uno de los 73 scripts. Es el
 
 | Grupo | Qué agrupa | ¿Entra al refactor? |
 |---|---|---|
-| **A — Correctitud** | Bugs que cambian comportamiento (truncamientos, undefined, cálculos) | ❌ No. Recomendación separada + aprobación. |
-| **B — Governance / Performance** | GU, búsquedas redundantes, loops O(n²), queries no optimizadas | ✅ Sí (corazón del pedido). |
+| **A — Correctitud** | Bugs que cambian comportamiento (truncamientos, undefined, cálculos); **cambios de entry point `afterSubmit`↔`beforeSubmit` (criterio v2 #8)**; filtros de Saved Search con variables sin validar nulos/vacíos que puedan dar resultados incorrectos | ❌ No. Recomendación separada + aprobación. |
+| **B — Governance / Performance** | GU, búsquedas redundantes, loops O(n²), queries no optimizadas; **Saved Searches con exceso de columnas → SuiteQL/Workbooks; SS candidatas a migración SuiteQL/Workbooks (prioritario)** | ✅ Sí (corazón del pedido). |
 | **C — Estándares 2.1** | `@NApiVersion`, `const/let`, literales, APIs deprecadas | ✅ Sí. |
 | **D — Mantenibilidad** | Duplicación, funciones largas, dead code, naming, global leaks | ✅ Sí. |
+
+> **Criterios de Saved Searches (v2).** En cada script, reportar explícitamente: (a) filtros con variables sin validar nulos/vacíos [robustez]; (b) SS con exceso de columnas → evaluar migración a SuiteQL (`SELECT` específico) o Analytics Workbooks; (c) SS candidatas a migración por volumen/frecuencia/complejidad → **hallazgo prioritario**.
+>
+> **Entry points (v2, #8).** Un cambio `afterSubmit`↔`beforeSubmit` NO se aplica automáticamente: se registra como **sugerencia** y se notifica a Tekiio (impacto funcional no evidente). Se trata como Grupo A.
 
 ## 3. Clasificación de riesgo (por cambio)
 

@@ -76,6 +76,10 @@ F0 Setup & Bloqueantes → F1 Análisis & Priorización → F2 PILOTO → F3 Esc
 | 🥉 Quick wins / piloto | `Generación TXT (Sched)` ✔, `BCU (Sched)`, validaciones de unicidad | Bajo riesgo, medición limpia | Bajo/Medio |
 | ⚠️ Bloqueados | Todo lo que depende de deps ausentes | No medible sin las fuentes | — |
 
+> **Meta de cobertura (criterio v2 #7).** Como referencia, alcanzar un mínimo de **3 scripts UserEvent + 2 Client Scripts por tipo de transacción relevante**. A validar con Tekiio según disponibilidad de scripts.
+>
+> **Prioridad SS (criterio v2).** Los scripts con Saved Searches pesadas (exceso de columnas, alto volumen/frecuencia) candidatas a **SuiteQL / Analytics Workbooks** se tratan como hallazgo prioritario.
+
 ## 8. Estado actual y próximos pasos
 
 **Hoy tenemos:** cuenta dev habilitada, refactor del piloto escrito y syntax-verificado, informe del piloto y este plan.
