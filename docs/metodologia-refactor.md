@@ -81,8 +81,43 @@ Cada script refactorizado produce un informe (ver [ejemplo](pilotos/generacion-t
 
 1. **Resumen** (métricas antes/después).
 2. **Reporte de hallazgos** priorizado (grupos + riesgo).
-3. **Cambios aplicados**: justificación por cambio, mapeada al criterio del cliente.
+3. **Plan de Cambios** priorizado por criterio #1→#6 (ver §9) — el entregable central.
 4. **Garantía de comportamiento**: cómo se preservó la identidad.
 5. **Procedimiento de caracterización y medición**.
 6. **Tabla comparativa** de métricas (GU, tiempo, LOC, byte-identidad).
-7. **Recomendaciones fuera de alcance** (Grupo A) con su riesgo.
+7. **Recomendaciones fuera de alcance** (Grupo A) con su riesgo, enlazadas al registro central.
+
+---
+
+## 9. Plan de Cambios (formato obligatorio)
+
+El entregable central por script: consolida el análisis en un plan accionable, priorizado y trazable.
+
+### 9.1 Tabla de cambios (ordenada por criterio #1→#6)
+
+Una fila por cambio, **ordenada según la prioridad de criterios del cliente**: #1 Integridad → #2 Governance → #3 Performance → #4 Patrones → #5 Legibilidad → #6 Reutilización.
+
+| Criterio | ID | Qué se modifica | Por qué | Qué mejora aporta | Riesgo | Estado |
+|---|---|---|---|---|:--:|:--:|
+| #n … | `<PREFIJO>-<id>` | … | … | … | 🟢/🟡/🔴 | 🔧/⏳/💡 |
+
+- **ID**: prefijo del script + identificador (p. ej. `GTX-A1`, `B3`).
+- **Riesgo**: 🟢 Bajo (estilo/formato) · 🟡 Medio (reestructuración de lógica) · 🔴 Alto (reemplazo de procesos completos o cambios estructurales importantes).
+- **Estado**: 🔧 Aplicado · ⏳ Pendiente aprobación · 💡 Propuesto (candidato).
+
+### 9.2 Matriz de riesgo
+
+Resumen consolidado: cantidad por nivel (Bajo/Medio/Alto), IDs incluidos y si requieren aprobación.
+
+### 9.3 Gestión de Alto riesgo
+
+- Todo cambio 🔴 Alto —o cualquiera que altere comportamiento: bugs del Grupo A, cambios de entry point (#8)— se registra en [registro-aprobaciones.md](registro-aprobaciones.md) con estado ⏳ Pendiente.
+- **Ningún cambio de Alto riesgo se planifica ni se aplica sin estado `✅ Aprobado`** (responsable + fecha).
+
+### 9.4 Definición de terminado (criterios de aceptación)
+
+> **Dado** el resultado del análisis de un script
+> **Cuando** se define el plan de cambios
+> **Entonces** existe un reporte priorizado donde cada cambio indica qué se modifica, por qué y qué mejora aporta
+> **Y** cada cambio queda clasificado como Bajo, Medio o Alto riesgo en la matriz de riesgo
+> **Y** ningún cambio de Alto riesgo se planifica para aplicarse sin aprobación explícita registrada

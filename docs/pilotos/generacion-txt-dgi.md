@@ -23,20 +23,39 @@
 
 ---
 
-## 2. Cambios aplicados (justificación por cambio)
+## 2. Plan de Cambios (priorizado por criterio #1→#6)
 
-| # | Cambio | Por qué | Criterio cliente |
-|---|---|---|---|
-| B3 | Agrupación por `(RUT + línea)` con `Map` en vez de doble loop | El original recorría los arrays acumulados por cada registro → O(n²). `Map` resuelve en O(n) y **preserva el orden de inserción** (= orden original) | #3 Performance |
-| B2 | Helper `filtrosSubsidiariaPeriodo` + uso directo de `searchSavedPro` sin consumir su `.array` | `searchSavedPro` arma internamente un arreglo (`armarArreglosSS`) que este script descartaba | #2 Governance |
-| B4 | Eliminado `log.debug` masivo y `JSON.stringify` dentro de loops | CPU + riesgo de saturar el límite de logging de NetSuite | #3 Performance |
-| C1 | `@NApiVersion 2.x` → **2.1** | Estándar solicitado | #4 Patrones |
-| C2 | `var`→`const`/`let`, `new Object()/new Array()`→`{}`/`[]`, arrow functions | ES6 de SuiteScript 2.1 | #4 Patrones |
-| D1 | `padding_left/right` locales eliminados; se usa `utilities.padding_left` | Eliminar duplicación | #6 Reutilización |
-| D2 | `generarTXT` (196 líneas) dividida en `agruparTransacciones`, `construirContenidoTXT`, `consultarConfiguracion`, `filtrosSubsidiariaPeriodo` | Una responsabilidad por función | #5 Legibilidad |
-| D3 | `urlRT` y `body` declarados con `const` (eran globales por `var` faltante) | Evitar fuga al scope global | #5 Legibilidad |
-| D4 | `formatearNumero`: eliminada la rama decimal (código muerto: siempre `toFixed(0)`) | Simplicidad sin cambiar resultado | #5 Legibilidad |
-| D5 | Hardcodes a constantes nombradas (`RUBRO_PUBLICIDAD`, `TZ_MONTEVIDEO`, etc.); eliminado `log.debug('entroooo')` y línea comentada | Legibilidad | #5 Legibilidad |
+Cada cambio indica **qué se modifica, por qué y qué mejora aporta**, con su **riesgo** (Bajo/Medio/Alto) y **estado**. Ordenado por la prioridad de criterios del cliente. Los cambios que alteran comportamiento (🔴 y bugs del Grupo A) NO se aplican sin aprobación registrada en [registro-aprobaciones.md](../registro-aprobaciones.md).
+
+| Criterio | ID | Qué se modifica | Por qué | Qué mejora aporta | Riesgo | Estado |
+|---|---|---|---|---|:--:|:--:|
+| **#1 Integridad** | GTX-A1 | Paginar `searchRubroPublicidad` (hoy trunca a 1000) | Trunca resultados → declaración DGI incompleta | Corrige bug fiscal de correctitud | 🔴 Alto | ⏳ Pend. aprob. |
+| **#1 Integridad** | GTX-A2 | Definir `resultado`/`idLogGeneral` si `archivoGenerar != "2181"` | Hoy `enviarMail` falla con undefined | Evita falla silenciosa del proceso | 🔴 Alto | ⏳ Pend. aprob. |
+| **#1 Integridad** | GTX-A3 | Manejar config con 0 o 2+ resultados | Hoy sólo resuelve con exactamente 1 | Diagnóstico claro si falta/duplica config | 🟡 Medio | ⏳ Pend. aprob. |
+| **#2 Governance** | B2 | `searchSavedPro` sin consumir su `.array`; helper `filtrosSubsidiariaPeriodo` | Armaba `armarArreglosSS`, que este script descartaba | Menos trabajo y GU por corrida | 🟡 Medio | 🔧 Aplicado |
+| **#2 Governance** | B1 | Consolidar la doble lectura de `customsearch_l598_beta_2181` vía SuiteQL | Dos agregaciones distintas (detalle vs SUM/GROUP) de la misma fuente | Menos GU; **criterio prioritario (v2)** | 🟠 Medio-Alto | 💡 Propuesto (SuiteQL) |
+| **#3 Performance** | B3 | Agrupación `(RUT+línea)` con `Map` en vez de doble loop | El original recorría los arrays acumulados → O(n²) | O(n) preservando orden (byte-idéntico) | 🟡 Medio | 🔧 Aplicado |
+| **#3 Performance** | B4 | Eliminar `log.debug` masivo y `JSON.stringify` en loops | CPU + riesgo de saturar el logging | Menos tiempo y ruido | 🟢 Bajo | 🔧 Aplicado |
+| **#4 Patrones** | C1 | `@NApiVersion 2.x → 2.1` | Estándar solicitado | Alineado a SuiteScript 2.1 | 🟢 Bajo | 🔧 Aplicado |
+| **#4 Patrones** | C2 | `var→const/let`, literales `{}`/`[]`, arrow functions | ES6 de 2.1 | Código estándar, scope seguro | 🟢 Bajo | 🔧 Aplicado |
+| **#5 Legibilidad** | D2 | Dividir `generarTXT` (196 líneas) en sub-funciones | Múltiples responsabilidades en una función | Una responsabilidad por función | 🟡 Medio | 🔧 Aplicado |
+| **#5 Legibilidad** | D3 | `urlRT`/`body` con `const` (eran globales) | `var` faltante → fuga al scope global | Sin fugas globales | 🟢 Bajo | 🔧 Aplicado |
+| **#5 Legibilidad** | D4 | Eliminar la rama decimal muerta de `formatearNumero` | Nunca se ejecuta (siempre `toFixed(0)`) | Menos código muerto | 🟢 Bajo | 🔧 Aplicado |
+| **#5 Legibilidad** | D5 | Hardcodes → constantes; quitar `log.debug('entroooo')` y línea comentada | Intención explícita, sin ruido | Más mantenible | 🟢 Bajo | 🔧 Aplicado |
+| **#6 Reutilización** | D1 | Usar `utilities.padding_left` (quitar duplicados locales) | Duplicación con la librería compartida | Una sola fuente del helper | 🟢 Bajo | 🔧 Aplicado |
+
+### Matriz de riesgo
+
+| Riesgo | Cant. | IDs | ¿Requiere aprobación? |
+|:--:|:--:|---|:--:|
+| 🟢 Bajo | 7 | B4, C1, C2, D1, D3, D4, D5 | No |
+| 🟡 Medio | 4 | B2, B3, D2, GTX-A3 | Sólo GTX-A3 (altera comportamiento) |
+| 🟠 Medio-Alto | 1 | B1 (candidato SuiteQL) | Al planificar |
+| 🔴 Alto | 2 | GTX-A1, GTX-A2 | **Sí** |
+
+- **Aplicados en el refactor (comportamiento intacto):** B2, B3, B4, C1, C2, D1, D2, D3, D4, D5.
+- **Pendientes de aprobación (registrados):** GTX-A1, GTX-A2, GTX-A3 → [registro-aprobaciones.md](../registro-aprobaciones.md).
+- **Candidato futuro:** B1 (requiere SuiteQL; prioritario por criterio v2).
 
 ---
 
@@ -56,13 +75,13 @@ Se verificó por inspección que el contenido del TXT es idéntico:
 
 ## 4. Recomendaciones fuera de alcance (Grupo A — requieren aprobación de Tekiio)
 
-> Estos son **bugs preexistentes**. NO se tocaron en el refactor (cambiarían comportamiento). Se reportan para corrección **separada** y aprobada.
+> Estos son **bugs preexistentes**. NO se tocaron en el refactor (cambiarían comportamiento). Se reportan para corrección **separada** y aprobada, registrados en [registro-aprobaciones.md](../registro-aprobaciones.md).
 
-| # | Bug | Ubicación (original) | Impacto | Riesgo fix |
-|---|---|---|---|---|
-| A1 | `searchRubroPublicidad` lee solo los primeros **1000** resultados (no pagina) | línea 194 | Declaración DGI incompleta si el período supera 1000 trans. de publicidad | 🔴 Alto |
-| A2 | `resultado`/`idLogGeneral` indefinidos si `archivoGenerar != "2181"` → falla en `enviarMail` | líneas 113-131 | Falla silenciosa | 🔴 Alto |
-| A3 | `configCarpeta`/`configNombreArchivo` solo se resuelven con exactamente 1 config | líneas 87-94 | TXT no generado sin diagnóstico claro | 🟡 Medio |
+| ID | Bug | Ubicación (original) | Impacto | Riesgo | Estado |
+|---|---|---|---|:--:|:--:|
+| GTX-A1 | `searchRubroPublicidad` lee solo los primeros **1000** resultados (no pagina) | línea 194 | Declaración DGI incompleta si el período supera 1000 trans. de publicidad | 🔴 Alto | ⏳ Pend. aprob. |
+| GTX-A2 | `resultado`/`idLogGeneral` indefinidos si `archivoGenerar != "2181"` → falla en `enviarMail` | líneas 113-131 | Falla silenciosa | 🔴 Alto | ⏳ Pend. aprob. |
+| GTX-A3 | `configCarpeta`/`configNombreArchivo` solo se resuelven con exactamente 1 config | líneas 87-94 | TXT no generado sin diagnóstico claro | 🟡 Medio | ⏳ Pend. aprob. |
 
 ### Candidato no aplicado (riesgo/esfuerzo)
 - **B1 — Consolidar la doble lectura de `customsearch_l598_beta_2181`:** no es la misma query (una es a nivel **detalle**, otra **SUM/GROUP**). Su unificación segura requiere **SuiteQL** (`N/query`). Estimado como mejora futura de governance.
