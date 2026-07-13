@@ -15,6 +15,9 @@ Registro central del proyecto. Toda modificación clasificada como **Alto riesgo
 | GTX-A1 | Generación TXT Localizaciones (Sched) | Paginar `searchRubroPublicidad` (hoy trunca a 1000 resultados) | 🔴 Alto | ⏳ Pendiente | Mobeats · 2026-07-07 | — | Bug fiscal: declaración DGI incompleta si el período supera 1000 transacciones de publicidad |
 | GTX-A2 | Generación TXT Localizaciones (Sched) | Garantizar `resultado`/`idLogGeneral` definidos si `archivoGenerar != "2181"` | 🔴 Alto | ⏳ Pendiente | Mobeats · 2026-07-07 | — | Hoy falla en `enviarMail` (undefined) |
 | GTX-A3 | Generación TXT Localizaciones (Sched) | Manejar configuración con 0 o 2+ resultados (hoy sólo resuelve con exactamente 1) | 🟡 Medio | ⏳ Pendiente | Mobeats · 2026-07-07 | — | TXT no se genera sin diagnóstico claro |
+| STC-A1 | Seteo de Tax Codes | Mover de `afterSubmit` a `beforeSubmit` (elimina `record.load()`+`save()` ≈30 GU/transacción) — #8 | 🔴 Alto | ⏳ Pendiente | Mobeats · 2026-07-09 | — | **El mayor ahorro de performance del proyecto.** Requiere validación de timing de `taxdetails`. Ver [propuesta](propuestas/STC-A1-entrypoint-seteo-tax-codes.md) |
+| STC-A2 | Seteo de Tax Codes | Manejo de error del `save`: hoy si falla, la transacción queda sin tax codes sin alerta | 🔴 Alto | ⏳ Pendiente | Mobeats · 2026-07-09 | — | Se **resuelve solo** si se aprueba STC-A1 (ya no hay 2º save) |
+| STC-A3 | Seteo de Tax Codes | `filter` de `taxdetails` devuelve >1 y toma sólo `[0]`, descarta el resto sin aviso | 🔴 Alto | ⏳ Pendiente | Mobeats · 2026-07-09 | — | Validar con fiscal si en UY hay impuestos compuestos por línea |
 
 ---
 
