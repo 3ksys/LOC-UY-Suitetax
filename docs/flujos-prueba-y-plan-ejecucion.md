@@ -90,15 +90,35 @@ Este ranking manda sobre la priorización teórica: es lo que **realmente** cons
 | **`L598 - Asignar Rubro IVA`** | Factura/NC Venta, Factura Compra | 2.9s | ×1 | 💰 | ✅ |
 | **`L598 - Setear Unidad Indexada`** | Orden/Factura Venta, Resguardo | 0.8s | ×1 | | ✅ |
 
-> **Insight:** el mayor ROI de performance NO está en el script más grande, sino en **`Seteo de Tax Codes`** (se ejecuta ×2 y domina el tiempo en 5 de 7 operaciones) y en reducir las **ejecuciones repetidas** de `Transacción (Servidor)` (×3) y `Conexion Directa FE` (×2).
+> **Insight:** el mayor ROI de performance NO está en el script más grande, sino en **`Seteo de Tax Codes`**, que domina el tiempo en 5 de 7 operaciones.
+>
+> ⚠️ **Corrección:** el `×N` de esta tabla es la **cantidad de entry points declarados**, no ejecuciones repetidas del mismo trabajo (ver [Hallazgo 2](#5-hallazgos-críticos)). No hay trabajo duplicado que eliminar: el ROI está en el costo interno de cada script, no en su multiplicador.
 
 ---
 
 ## 5. Hallazgos críticos
 
-1. **🔴 Error `100000` — CAE no se genera (bloqueante ambiental).** 9 de 14 casos de Venta y 2 de Compra quedaron **Observados** por "no genera CAE por error de conexión". Esto **no es un defecto de los scripts** — es la conexión al middleware de FE/DGI en la cuenta de dev. **Acción:** escalar a Tekiio; sin esto no se pueden probar/caracterizar los flujos con CAE. El refactor y la caracterización del resto (guardado, cálculos, TXT) **sí** pueden avanzar.
+1. **🔴 Error `100000` — CAE no se genera (bloqueante).** 9 de 14 casos de Venta y 2 de Compra quedaron **Observados**.
 
-2. **Ejecuciones repetidas por guardado.** `Transacción (Servidor)` corre **×3**, `Conexion Directa FE` y `Seteo de Tax Codes` **×2**. Entender por qué (¿beforeSubmit + afterSubmit? ¿re-triggers?) puede rendir tanto como optimizar el script en sí — pero un cambio de entry point es **criterio #8 (aprobación previa)**.
+   ⚠️ **Corregido — no es un error de conexión.** El mensaje literal de la demo es: *"ocurrió un error al solicitar firmar comprobante… **TL tipo de CFE no es válido, posible error de sintaxis**, código de error: 100000"*. La solicitud **llegó** al servicio de firma y fue **rechazada por validación del payload**. Ver [evidencia completa](analisis/demo-tekiio-flujos-y-scripts.md#4-evidencia-del-error-100000).
+
+   **La causa sigue indeterminada** entre configuración (mapeo de tipo de documento/serie en dev) y construcción del XML por `Conexion Directa FE (SS)`. La afirmación previa de que "no es un defecto de los scripts" **no estaba probada** y esta evidencia abre esa segunda hipótesis.
+
+   **Acción:** escalar a Tekiio **con el mensaje exacto**, no como "falla de conexión" — o van a revisar conectividad en lugar del tipo de CFE. El refactor y la caracterización del resto (guardado, cálculos, TXT) **sí** pueden avanzar.
+
+2. **✅ RESUELTO — el `×N` es la cantidad de entry points declarados, NO re-triggers.** Verificado sobre el `return` de los tres scripts:
+
+   | Script | Entry points declarados | `×N` del informe |
+   |---|---|---|
+   | `Seteo de Tax Codes` | `beforeSubmit`, `afterSubmit` | ×2 |
+   | `Transacción (Servidor)` | `beforeLoad`, `beforeSubmit`, `afterSubmit` | ×3 |
+   | `Conexion Directa FE (SS)` | `beforeLoad`, `afterSubmit` | ×2 |
+
+   Correlación exacta en los tres. **No hay re-ejecución del mismo trabajo ni un bug de re-trigger que perseguir**, y no hay un "×2 de trabajo duplicado" que eliminar.
+
+   **Consecuencia sobre la lectura del tiempo:** el `×N` es un contador de ejecuciones, no un multiplicador del tiempo listado. En `Seteo de Tax Codes` el `beforeSubmit` es un no-op que solo loguea, así que prácticamente **todo** el tiempo está en `afterSubmit` (su `record.load()` + `save()`). Eso refuerza STC-A1, que ataca justamente ese costo sin cambiar la cantidad de entry points.
+
+   ⚠️ Confirmar contra el CSV de `DesgloseScripts` si la columna de tiempo es total por script o promedio por ejecución. La lectura "total" es la consistente: en Factura de Venta, `11.1 + 11.6 + 4.1 + 2.7 = 29.5s` cabe dentro de los 44.8s de la operación, mientras que multiplicar cada uno por su `×N` la excedería.
 
 3. **Scripts fuera del repo corriendo en los flujos.** Aparecen `URU-Blanquear Campos FE`, `URU-Conf. Tasas IVA`, `PAN - Obligatoriedad...`, `FTE UE Transaction`, etc. — no están en los 75 del repo. **Acción:** confirmar con Tekiio si son alcance del refactor o de otro bundle/SuiteApp.
 
@@ -109,7 +129,7 @@ Este ranking manda sobre la priorización teórica: es lo que **realmente** cons
 ## 6. Plan de ejecución
 
 ### Fase A — Habilitar la medición (bloqueantes)
-- **A1.** Escalar a Tekiio el **error 100000 (conexión FE/CAE)** en la cuenta de dev.
+- **A1.** Escalar a Tekiio el **error 100000** en la cuenta de dev, con el mensaje exacto: *"TL tipo de CFE no es válido, posible error de sintaxis"*. **No** presentarlo como falla de conexión.
 - **A2.** Conseguir las **dependencias ausentes** (`3K/utilities`, `L598/crear_resguardo`, `L595/utilidades`) — bloquean 14 scripts (Resguardos/Pagos).
 - **A3.** Confirmar con Tekiio el **alcance** de los scripts fuera del repo (`URU-*`, `PAN-*`, `FTE`).
 - **A4.** Baseline de tiempos: **ya capturado** en `Mobeats Análisis` (DesgloseScripts). Re-capturar `Pago de Factura`.
@@ -137,7 +157,10 @@ Cada script sigue el flujo del piloto: análisis verificado → Plan de Cambios 
 ---
 
 ## 7. Dependencias y decisiones abiertas (para Tekiio)
-- [ ] Resolver error 100000 (conexión FE/CAE) en dev.
+- [ ] 🔴 **Rol para disparar los originales.** La audiencia de los 9 deployments de `Seteo de Tax Codes` es `Administrador` (+ `URU - Contador` solo en Factura de venta) y Mobeats no tiene ninguno. Sin eso no se puede generar baseline de output sobre transacciones nuevas. Pedido alternativo más rápido que el otorgamiento de rol: **que Tekiio guarde las transacciones de prueba con su rol** y Mobeats solo exporte.
+- [ ] Resolver error 100000 en dev — **rechazo de validación del tipo de CFE**, no conectividad.
+- [ ] Confirmar si `L598 - Calcular Ret. Lineas (SS)` (mencionado en la demo) es un script del repo con otro nombre o está fuera de él.
+- [ ] Confirmar si la cuenta de dev está en modo **automático** de generación de CAE al guardar (afecta re-guardar transacciones para caracterizar).
 - [ ] Proveer fuentes de deps ausentes (3K/utilities, crear_resguardo, L595).
 - [ ] Confirmar alcance de scripts fuera del repo (URU-*, PAN-*, FTE).
 - [ ] Confirmar baseline de performance oficial (¿el de `Mobeats Análisis` es el de referencia?).

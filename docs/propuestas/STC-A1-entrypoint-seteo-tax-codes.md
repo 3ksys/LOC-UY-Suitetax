@@ -2,7 +2,8 @@
 
 ## Mover `L598 - Seteo de Tax Codes` de `afterSubmit` a `beforeSubmit`
 
-**Estado:** ⏳ Pendiente de aprobación de Tekiio (criterio #8 — cambio de entry point)
+**Estado:** ✅ **Aprobada por Tekiio (2026-08-20)** e implementada sobre el `_REF` en su variante **híbrida** (§5, fila 2) — ver [informe de refactor §3.bis](../refactors/1-seteo-de-tax-codes.md#3bis-stc-a1--guarda-híbrida-aplicada-2026-08-20). Pendiente: caracterización en la cuenta.
+> Tekiio precisó que hay que **asumir cualquier contexto de creación** (CSV, integraciones, etc.) aunque hoy no se usen. Por eso no se aplicó `beforeSubmit` puro: la guarda híbrida verifica el **dato**, no el contexto, y no requiere enumerar la lista del §3.
 **Riesgo:** 🔴 Alto (fiscal) · **Impacto esperado:** Alto (el mayor ahorro de GU/tiempo medido)
 **Equipo:** Mobeats · **Fecha:** 2026-07-09
 
@@ -17,13 +18,14 @@ El script corre en `afterSubmit` y, para setear 2 columnas custom por línea (`c
 
 = **~30 GU y un guardado completo extra por transacción**, además del guardado que ya hizo el sistema.
 
-**Costo real medido** (baseline `Mobeats Análisis`): `Seteo de Tax Codes` es el script custom más pesado — **11–14 s y se ejecuta ×2** en Orden/Factura/NC de Venta y Orden/Factura de Compra. Es el #1 por impacto real de todo el proyecto.
+**Costo real medido** (actualizado 2026-08-06 con APM — ver [medición](../medicion-apm.md)): **30 GU exactas por guardado, verificadas en 5 corridas sobre 5 tipos de registro distintos** (SO, Bill, Bill Credit, PO, Estimate). El 100% del governance proviene del load+save: APM muestra 2 operaciones de registro, 0 búsquedas, 0 llamadas externas. El tiempo del script varía 1,3–7,6s según tipo y frío/caliente (no citable como métrica); el governance no se mueve.
+> Nota: la cifra "11–14s ×2" citada originalmente era la **suma acumulada** del script sobre 6-7 guardados del Excel APM de Tekiio (~1,6-2,3s por guardado), no el costo individual — corrección documentada en [medicion-apm.md](../medicion-apm.md).
 
 ## 2. Cambio propuesto
 
 Mover la propagación de tax codes a **`beforeSubmit`**, operando directamente sobre `context.newRecord`. Los cambios se persisten **junto con el guardado original** del sistema → se elimina el `record.load()` **y** el `save()` adicional.
 
-**Ahorro esperado:** ~30 GU por transacción + la porción del tiempo atribuible al load+save (a medir).
+**Ahorro medido (ya no estimado):** 30 GU por transacción — el **100% del footprint de governance del script**, verificado empíricamente en 5 corridas — más la eliminación del evento de guardado extra que hoy re-dispara los demás UserEvents del registro en cada transacción.
 
 ## 3. El riesgo central (lo que decide si es viable)
 

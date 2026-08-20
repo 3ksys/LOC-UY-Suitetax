@@ -52,6 +52,7 @@ Este documento define **cómo** se refactoriza cada uno de los 73 scripts. Es el
 - En logs, la constante de proceso lleva sufijo `[REF]` para distinguir qué versión corrió.
 - Módulos compartidos que se refactoricen se versionan igual (`utilities_REF`) para no contaminar a los scripts que aún usan el original.
 - ⚠️ No confundir con el sufijo `V2` preexistente: en este proyecto `V2` es otra cosa (segunda versión histórica).
+- **Registros de NetSuite** (Script record y Script Deployment): `REF - <nombre abreviado>` (el campo NOMBRE acepta **40 caracteres**) / `customscript_<slug>_ref` / `customdeploy_<slug>_ref`. Reglas de derivación del slug, abreviatura y antipatrones en [Carga y deploy de scripts §Convención de nombres e IDs](carga-y-deploy-de-scripts.md#convención-de-nombres-e-ids).
 
 ## 6. Aislamiento en la cuenta
 
