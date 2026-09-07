@@ -121,6 +121,12 @@ Solo necesaria si hace falta forzar bordes que las transacciones UAT no cubren (
 > ⚠️ **La trampa que esto abre.** Como la restricción es *por persona* y no *por rol*, el `_REF` dispara con **cualquier rol** que use ese usuario. Hoy es inofensivo porque Mobeats no tiene `Administrador` ni `URU - Contador`. Pero el proyecto tiene un **pedido abierto a Tekiio para que entregue el rol `URU - Contador`** (necesario para forzar bordes — ver §3, Fase 1). **El día que ese rol se otorgue, el aislamiento se rompe en silencio**: con `URU - Contador`, el original y el `_REF` dispararían juntos sobre la misma transacción. Antes de aceptar ese rol hay que cargar la audiencia real en los 9 deployments y/o revisar el `Status`.
 >
 > **Acción pendiente (no urgente):** cargar `URU-Contador Suitetax (Mobeats)` en `INTERNAL ROLES` de los 9 deployments del `_REF`. Con `Status = Testing` no cambia el comportamiento actual, pero deja de ser una configuración cuya seguridad depende de un supuesto no escrito. **No hacerlo en medio de una corrida de caracterización.**
+>
+> 🔴 **La trampa se activó — verificado 2026-09-07.** El rol `URU - Contador` **ya fue otorgado** al usuario de Mobeats: figura en `My Roles` con último login **28/07/2026**. La condición que este bloque daba por futura — *"el día que ese rol se otorgue, el aislamiento se rompe en silencio"* — **ya ocurrió, y el registro no lo reflejaba.**
+>
+> Con `URU - Contador`, al guardar un `vendorbill` disparan **tres** escritores de las mismas dos columnas: el STC original, `Transacción (Servidor)` — los dos que se vieron correr **juntos** sobre la 15824, ver corrección al final de la Fase 3 — y el `_REF`, que corre igual porque `Status = Testing` habilita **por owner, no por rol**.
+>
+> Mientras esto no se corrija, **la validez de toda corrida depende de recordar con qué rol se está logueado**. La acción pendiente de arriba deja de ser "no urgente".
 
 ### Fase 3 — Corrida del `_REF`
 
@@ -133,6 +139,23 @@ Solo necesaria si hace falta forzar bordes que las transacciones UAT no cubren (
 
    📌 **Hallazgo derivado — audiencias complementarias y autoría del baseline:** en `vendorbill`, STC original corre solo para `Administrador` (customdeploy6) y Transacción (Servidor) solo para `URU - Contador` (customdeploy_proveedor) → en cada guardado dispara **a lo sumo uno** de los dos scripts duplicados, según el rol. Como el UAT/QA de compras corrió con `URU - Contador`, el baseline de tax codes de las Bills (14990 incluida) **lo escribió Transacción (Servidor)** (`setearCodigoImpuestosLineas`, copia casi literal de la lógica de STC — TRS-D1), no el STC original. **Alcance honesto del diff de `vendorbill`:** "idénticos" prueba que el `_REF` reproduce el baseline existente (escrito por la lógica duplicada de TRS); la equivalencia con el STC original se apoya además en la revisión de código (TRS-D1) y en el smoke test de `salesorder` (donde solo STC pudo escribir, por TRS-A2). Un baseline estricto de STC-original en `vendorbill` requeriría una Bill guardada por `Administrador` (pedido opcional a Tekiio). Dato clave además para la decisión de **dueño único** (TRS-D1): en la práctica, las compras de `URU - Contador` ya son territorio exclusivo de Transacción (Servidor). No generalizar a otros tipos sin revisar cada deployment.
 9. Repetir 7–8 para los casos 2, 3 y 4.
+
+> 🔴 **Corrección verificada en la cuenta (2026-09-07) — las audiencias NO son complementarias.**
+>
+> El hallazgo derivado del paso 8 afirma que en `vendorbill` dispara "a lo sumo uno" de los dos scripts duplicados según el rol. **Los logs lo refutan.** Sobre la transacción **15824**, mismo usuario y **mismo timestamp**:
+>
+> | Script | Deployment | Hora |
+> |---|---|---|
+> | `L598 - Seteo de Tax Codes` | `CUSTOMDEPLOY6` | 07/09/2026 10:08:26 am |
+> | `L598 -Transacción (Servidor)` | `CUSTOMDEPLOY_PROVEEDOR` | 07/09/2026 10:08:26 am |
+>
+> Y el segundo loguea `setearcodigoImpuestosLineas` con `arrayTaxDetails: [{"taxDetailReference":"15824_1","taxCode":"28","taxRate":22}]` — escribió las mismas dos columnas. Es la duplicación **TRS-D1 observada en vivo**, no inferida del código.
+>
+> **Tres consecuencias:**
+>
+> 1. O `customdeploy_proveedor` incluye más roles que los inventariados, o el rol de ese usuario está en las dos audiencias. Hay que **reinventariar**.
+> 2. El "alcance honesto del diff de `vendorbill`" del paso 8 se apoyaba en esta premisa y queda **sin sustento**: en la Bill 14990 pudieron escribir los dos.
+> 3. **La pata 3 del aislamiento no se puede cerrar por audiencia.** Hay que mirar el log o el APM de la corrida concreta — como se hizo con la 15826.
 10. Exportar los mismos CSV → `baseline/ref-<tipo>.csv`.
 
 ### Fase 4 — Comparación
@@ -298,6 +321,35 @@ Confirmación visual de la línea tras la corrida 2, con el juego completo de co
 - 📉 Tiempo: 1,742 s → 0,088 s. **Secundario y no citable como métrica** (varianza y cold-starts dominan, ver [medición APM](../medicion-apm.md)); se registra porque el origen del delta es estructural — desaparecieron un `load` y un `save`.
 
 > ⚠️ **Residual declarado:** la transacción tenía **una sola línea aplicada** entre 14, así que el loop de `desaplicarYAplicarNC` se ejercitó con n=1. Un `vendorcredit` con 2+ documentos aplicados sería el caso más exigente. No bloqueante — el mecanismo quedó entendido y no depende de la cantidad de líneas — pero se deja anotado.
+
+### Caracterización STC-A2 — `vendorbill` 15826 (2026-09-07)
+
+Dos corridas sobre la misma transacción. Detalle del marcado y del registro generado en [refactor §3.ter](../refactors/1-seteo-de-tax-codes.md#verificación-en-la-cuenta-2026-09-07).
+
+| # | Hora | Versión desplegada | Resultado |
+|:-:|---|---|---|
+| 1 | 11:57–11:58 | `_REF` de producción (28.561 b) | ✅ sin regresión. `rama=legacy` en ambos entry points, `resultado=ok`, sin errores de módulo |
+| 2 | 15:09 | copia con `throw` forzado (32.120 b) | ✅ marcado end-to-end: `FE-DLG-3063` con `REFERENCIA TRANSACCIÓN = Bill #TEST-STC-A2-01` |
+
+**Aislamiento — 3 patas cerradas, y ninguna por audiencia:**
+
+| Pata | Evidencia |
+|---|---|
+| 1. El original no corrió | Execution Log del original en el rango 07/09: filas **contiguas** `11:31:18 am` → `12:02:55 pm`, sin nada en la ventana 11:57–11:58. Todas de otro usuario sobre la transacción 15824. El `TOTAL: 165` hace la vista parcial, pero la contigüidad la vuelve concluyente |
+| 2. Solo el `_REF` | `TOTAL: 6` entradas, deployment `CUSTOMDEPLOY_L598_STC_REF_VENDORBILL`. El total del día prueba además que corrió **una sola vez** |
+| 3. `Transacción (Servidor)` no corrió | APM `Page Time Summary` filtrado a `11:00–12:00`, `NUMBER OF LOGS: 1`, único log `11:57:44 sbenitez@mobeats.io`: en el `Script and Workflow Time Breakdown` de **ese** guardado no aparece |
+
+> **Técnica a reutilizar.** El APM acotado a un solo log cerró la pata 3 de forma limpia. El `Script Execution Log` obliga a filtrar por script y a leer ventanas de tiempo — y una vista parcial nunca prueba una ausencia — mientras el desglose de APM **es** el conjunto exacto de scripts que corrieron en un guardado. Preferirlo cuando la pregunta es "quién corrió en esta transacción".
+
+**Costo medido del camino legacy** (mismo APM, un solo guardado): `REF - L598 - Seteo de Tax Codes` = `0,077 s` en `beforeSubmit` + **`14,425 s` en `afterSubmit`**, sobre `30,001 s` de SuiteScript total del guardado. Casi la mitad del tiempo de script es el `load`+`save` legacy — exactamente lo que STC-A1 elimina cuando puede tomar la rama inline.
+
+⚠️ **Por qué esta corrida no tomó inline.** La línea de gasto sin tax code recibe `taxdetailsreference` (`15826_1`) sin que SuiteTax genere su fila en `taxdetails`, y la guarda todo-o-nada deriva al legacy **siempre**. Ver el límite nuevo en [refactor §3.bis](../refactors/1-seteo-de-tax-codes.md#límites-explícitos).
+
+**Alcance NO cubierto — dicho antes de que alguien lo lea como cubierto:** la rama `expense` no quedó caracterizada **en escritura**. SuiteTax no creó fila de `taxdetails` para la línea de gasto, así que el script la recorre y no resuelve nada (mismo comportamiento que el original, que emite el mismo `log.error`). Para caracterizar `expense` hace falta una Bill con **tax code en la línea de gasto**, cargado como fila `LINE TYPE = Expense` en la solapa `Tax Details`: el campo **no existe** en la fila de la sublista, que solo expone `TAX AMOUNT` y `GROSS AMT` calculados.
+
+**Cobertura que sí aportó esta Bill:** rama `item` con dos referencias distintas (`NEW2`/`NEW3` → `15826_2`/`15826_3`), y el par **Grupo / End of Group**, que ejercita la rama `ingroup` de `setearColumnasConTaxDetails` — la que además escribe la línea anterior cuando `itemtype == "Group"`. Era uno de los bordes pendientes del §2.
+
+**Defecto menor detectado (Grupo D, sin efecto en comportamiento):** los tres `log.error` de `setearColumnasConTaxDetails` dicen `linea de articulos nro: 0`, `nro: 1`, `nro: 3` **sin nombrar la sublista**. El `nro: 0` era `expense[0]`; los otros dos, `item[1]` e `item[3]`. Si ambas sublistas fallaran en la línea 0 habría dos mensajes idénticos apuntando a cosas distintas.
 
 ### Plan de regresión — 6 deployments restantes (definido 2026-08-05)
 

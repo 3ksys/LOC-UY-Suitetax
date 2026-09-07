@@ -76,7 +76,8 @@ Ambas condiciones apuntan al **escenario híbrido** del [§5 de la propuesta](..
 
 - La guarda detecta **"vacío o incompleto", no "poblado pero obsoleto"**. Ese escenario se atacó empíricamente en el experimento (caso 5: cambio de artículo por otro de distinta tasa → idéntico). Mitigación: mantener el script de diagnóstico desplegado en paralelo tras aplicar.
 - **`desaplicarYAplicarNC` no se ejecuta en la rama inline** — es un workaround del segundo save, que en esa rama no existe. Es el único punto donde el comportamiento podría cambiar y **sigue sin probarse**: la corrida del 2026-08-20 sobre `vendorcredit` 15227 terminó ejecutando el legacy (que sí lo ejecuta), así que la sublist `apply` bajo rama inline pura no está caracterizada. **Caracterizar `vendorcredit` con `Usage Count = 0` confirmado antes de dar el híbrido por cerrado.**
-- Los tipos con CFE (`invoice`, `creditmemo`, `cashsale`, `cashrefund`) siguen bloqueados por el middleware CAE — Tekiio lo está revisando en la cuenta y pidió probar también una respuesta exitosa del facturador.
+- 🔴 **Hallazgo 2026-09-07 — una línea de gasto sin tax code bloquea la rama inline para siempre.** Medido en `vendorbill` **15826**: SuiteTax le asigna `taxdetailsreference` a la línea de `expense` (`15826_1`) **pero no crea su fila en `taxdetails`**, porque esa línea no tiene impuesto. Como la guarda de completitud es todo-o-nada, devuelve `linea-sin-taxdetail:expense[0]` y **el `beforeSubmit` nunca escribe inline**. No es un defecto del refactor — el original tampoco resuelve esa línea — pero significa que para esa forma de transacción **el ahorro de 30 GU → 0 no se materializa nunca**. Costo medido del legacy en esa corrida: **14,4 s de los ~30 s de SuiteScript** del guardado. **Dimensionar con Tekiio: ¿qué proporción de las Bills reales lleva líneas de gasto sin impuesto?** Si es lo habitual, el beneficio de STC-A1 en compras es marginal.
+- Los tipos con CFE (`invoice`, `creditmemo`, `cashsale`, `cashrefund`) siguen bloqueados por el middleware CAE. **Causa identificada 2026-09-07** — detalles de LOG 3061/3062 sobre `URU-Resguardo #263`: `No se encuentran Configurados los siguientes Campos Requeridos de la Configuración del Middleware de Factura Electrónica : Password Para la conexion con el Middleware de Factura Electronica / URL del RestLet`. No está fallando: está **sin configurar**, y los dos campos que faltan están nombrados. Pasa de "Tekiio lo está revisando" a un pedido puntual.
 
 ✔ **Sintaxis:** `node --check` OK.
 
@@ -117,6 +118,55 @@ El objeto `LOG_FE` del script tiene dos constantes vacías que son **datos de la
 | `CODIGO_MENSAJE` | `customrecord_l598_msg_log.custrecord_l598_msg_log_codigo` | el detalle se graba sin el campo de mensaje; la descripción libre queda prefijada con `STC-A2` para poder filtrarla |
 
 El marcado **degrada sin romper** en ambos casos, y cada degradación deja su propio `log.error` diciendo qué constante falta. Definir los dos códigos es lo único que queda para que la marca quede completa y tipificada.
+
+### Verificación en la cuenta (2026-09-07)
+
+El marcado de STC-A2 solo corre **ante excepción**, así que ningún guardado normal lo ejercita. Se verificó en dos pasos.
+
+**Paso 1 — no rompe el camino feliz.** `vendorbill` 15826 creada y guardada con el `_REF` de producción. Resultado: sin errores de módulo (`N/search` + `N/format` cargan — era el único riesgo de STC-A2 sobre el camino feliz), el rastreo de `etapa` es transparente (`STC-A1 rama=legacy resultado=ok`) y el marcado no se disparó. Aislamiento y tiempos en [caracterización § vendorbill 15826](../caracterizacion/1-seteo-de-tax-codes.md#caracterización-stc-a2--vendorbill-15826-2026-09-07).
+
+**Paso 2 — el marcado funciona.** Se subió temporalmente una copia del `_REF` con un `throw` deliberado antes del `save()` y `STC_A2 = "STC-A2-PRUEBA"` (prefijo distinto para que los registros generados sean triviales de borrar y no contaminen la Saved Search real con alertas fiscales falsas), se hizo `Edit`+`Save` de la Bill 15826, y se restauró el archivo original.
+
+> **Técnica reutilizable:** las dos versiones se distinguen por **tamaño** en la ficha del File Cabinet — **32.120** bytes la de prueba, **28.561** la real. La restauración se verifica de un vistazo en lugar de depender de que alguien se acuerde. Y como se reusa el archivo y el deployment existentes, no hay que crear un Script record ni destildar deployments: menos manipulación de configuración, menos superficie de error. El radio de impacto de la ventana con el `throw` es solo el owner del script record, porque `Status = Testing` no ejecuta para nadie más.
+
+Log obtenido, en orden:
+
+```
+15:09:20 AUDIT  beforeSubmit           STC-A1 rama=legacy motivo=linea-sin-taxdetail:expense[0]
+15:09:25 AUDIT  afterSubmit            STC-A1 rama=legacy motivo=linea-sin-taxdetail:expense[0]
+15:09:25 ERROR  afterSubmit            STC-A2-PRUEBA fallo etapa=save error=STC_A2_PRUEBA_FORZADA: ...
+15:09:25 ERROR  crearCabeceraLogFE     CODIGO_ESTADO sin configurar: se graba solo el detalle
+15:09:26 ERROR  crearDetalleLogFE      CODIGO_MENSAJE sin configurar: el detalle se graba sin mensaje
+15:09:27 AUDIT  registrarFalloEnLogFE  STC-A2-PRUEBA transaccion marcada idTransaccion=15826 cabecera=sin-cabecera detalle=3063
+```
+
+Las tres líneas `ERROR` del medio son **degradación esperada**, no fallas. Y `resultado=ok` no aparece, que es la prueba de que el `save` no se ejecutó.
+
+Registro creado — `FE-DLG-3063`, borrado después de verificar:
+
+| Campo | Valor | Qué verifica |
+|---|---|---|
+| `REFERENCIA TRANSACCIÓN` | `Bill #TEST-STC-A2-01` | ✅ la Saved Search de intercepción **sí** encuentra la transacción. Era el único riesgo capaz de invalidar la Alternativa 2 |
+| `FECHA` | `07/09/2026 3:09:26 pm` | ✅ el campo aceptó el string `DATETIMETZ` |
+| `DETALLE` | texto completo con `etapa=save` y `error.name` | ✅ el diagnóstico de la Alt 1 llega al registro |
+| `MENSAJE` | vacío | degradación esperada sin `CODIGO_MENSAJE` |
+| `REFERENCIA LOG` | vacía | detalle huérfano esperado sin `CODIGO_ESTADO` |
+
+Los tres riesgos que no se podían cerrar leyendo código quedaron descartados: **permisos** de creación sobre los custom records, **tipo del campo de fecha**, y que el **detalle huérfano** conserve la referencia a la transacción.
+
+#### Dos hallazgos derivados
+
+**El campo `fecha` del detalle es texto libre, no fecha.** Mi preocupación era que rechazara el string; era la preocupación equivocada. Acepta cualquier texto, y por eso la tabla — **3.052 registros** — tiene tres formatos distintos conviviendo:
+
+| Registro | Valor |
+|---|---|
+| 3063 (nuestro) y 3061/3062 (Restlets) | `07/09/2026 3:09:26 pm` |
+| 3060 | `Fri Sep 04 2026 16:09:22 GMT-0300 (hora estándar de Uruguay)` |
+| 3058/3059 | `Wed Sep 02 20:00:44 PDT 2026` — **horario del Pacífico** |
+
+Nuestra escritura sigue la convención de los Restlets, que es la consistente. Pero 3.052 registros con fechas no comparables ni ordenables es un problema de trazabilidad **preexistente**, que conviene reportar a Tekiio aparte de STC-A2.
+
+**El rol que opera sí puede consultar los registros de LOG.** El rol `URU-Contador Suitetax (Mobeats)` no tiene el permiso `Custom Record Types` — que gobierna la página de *definiciones* — pero **sí** puede armar Búsquedas Guardadas sobre `URU-Factura Electronica Detalle Log`, `URU-Factura Electronica Log`, `URU-FE Estados Log` y `URU-FE Mensajes Log`. Es decir: **la Alternativa 2 es operable por el rol de negocio sin permisos extra**, y los dos códigos pendientes se pueden proponer con datos en lugar de dejarlos como pregunta abierta — el catálogo de mensajes es consultable.
 
 ✔ **Sintaxis:** `node --check` OK.
 
@@ -163,7 +213,12 @@ Aun así, **el `_REF` necesita los 9**: es el reemplazo del original, y un tipo 
 - [x] Igualar `Ejecutar como rol` del deployment `_REF` al del original (`Administrador`) — 2026-08-03
 - [x] Deployments `_REF` de ramas: `vendorbill` y `vendorcredit` creados y caracterizados ✅ idénticos (2026-08-03/05) — con las 3 ramas alcanzables cubiertas (`item` multi-tasa, `expense` ausente, `apply`). Pendiente: 6 deployments de regresión (`invoice`, `estimate`, `creditmemo`, `cashsale`, `cashrefund`, `purchaseorder`)
 - [x] **Aprobación STC-A1 (Tekiio, 2026-08-20)** — avanzar sobre el `_REF` y revisar resultados de pruebas
-- [x] **STC-A2 aplicado (aprobación Tekiio, 2026-09-07)** — Alt 2 + Alt 1 sobre la estructura de LOG de FE (ver §3.ter). Pendiente: definir `CODIGO_ESTADO` y `CODIGO_MENSAJE` en la cuenta, y la Saved Search de intercepción previa al CFE
+- [x] **STC-A2 aplicado (aprobación Tekiio, 2026-09-07)** — Alt 2 + Alt 1 sobre la estructura de LOG de FE (ver §3.ter)
+- [x] **STC-A2 verificado en la cuenta (2026-09-07)** — `vendorbill` 15826: camino feliz sin regresión + marcado probado de punta a punta con `throw` forzado (`FE-DLG-3063`, `REFERENCIA TRANSACCIÓN` cargada). Ver [§3.ter](#verificación-en-la-cuenta-2026-09-07)
+- [ ] STC-A2 — definir `CODIGO_ESTADO` y `CODIGO_MENSAJE` en `URU-FE Estados Log` / `URU-FE Mensajes Log`. El catálogo es consultable con el rol de negocio, así que se puede **proponer** valores concretos
+- [ ] STC-A2 — armar la Saved Search de intercepción previa al CFE (criterio: `DETALLE` contiene `STC-A2`)
+- [ ] **STC-A1 — dimensionar el hallazgo de la línea de gasto** (§3.bis): si las Bills reales llevan líneas de gasto sin impuesto, el ahorro de 30 GU → 0 en compras es marginal
+- [ ] Reinventariar audiencias de los deployments de `vendorbill` — la premisa de audiencias complementarias quedó refutada (ver caracterización)
 - [ ] **STC-A3 sin respuesta** — ni la pregunta fiscal (¿impuestos compuestos por línea en UY?) ni la aprobación de la instrumentación de detección. Se conserva el comportamiento actual (primer match)
 - [x] **STC-A1 aplicado con guarda híbrida** + `node --check` OK — 2026-08-20 (ver §3.bis)
 - [x] Subir el `_REF` actualizado al File Cabinet y verificar que los deployments tomen la versión nueva — 2026-08-20
