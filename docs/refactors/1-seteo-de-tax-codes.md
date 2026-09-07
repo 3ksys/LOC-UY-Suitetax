@@ -29,7 +29,7 @@
 | #4 | STC-C1 | Eliminado `N/search` del `define` (no se usaba) | 🟢 Bajo | 🔧 Aplicado |
 | #6 | STC-D1 | Eliminado `arrayTaxCodes` (sólo alimentaba un log) | 🟢 Bajo | 🔧 Aplicado |
 | #1/#8 | STC-A1 | `beforeSubmit` con **guarda híbrida** + fallback a `afterSubmit` (elimina load+save en el camino feliz) | 🔴 Alto | ✅ Aplicado y medido (2026-08-20): **30 GU → 0** |
-| #1 | STC-A2 | Manejo de error del `save` | 🔴 Alto | ⏳ Aprobación |
+| #1 | STC-A2 | Manejo de error del `save` → diagnóstico por `etapa` + marca en el LOG de FE | 🔴 Alto | 🔧 Aplicado (2026-09-07) — pendiente definir los 2 códigos en la cuenta |
 | #1 | STC-A3 | Múltiples `taxdetails` por línea → toma `[0]` | 🔴 Alto | ⏳ Validar fiscal |
 
 Alto riesgo registrado en [registro-aprobaciones.md](../registro-aprobaciones.md).
@@ -80,6 +80,46 @@ Ambas condiciones apuntan al **escenario híbrido** del [§5 de la propuesta](..
 
 ✔ **Sintaxis:** `node --check` OK.
 
+## 3.ter STC-A2 — Marcado del fallo (aplicada 2026-09-07)
+
+Tekiio aprobó la **Alternativa 2 + Alternativa 1** de la [propuesta STC-A2/A3](../propuestas/STC-A2-A3-manejo-error-y-multiples-taxdetails.md), con una precisión sobre nuestra recomendación: en lugar de un campo custom de cabecera, **reutilizar la estructura de tablas y registros de detalle de LOG del proceso de Facturación Electrónica**. Eso responde el bullet abierto del §5 de la propuesta.
+
+### Qué se aplicó
+
+| | Antes | Ahora |
+|---|---|---|
+| Diagnóstico (Alt 1) | `Error NetSuite Excepcion - detalles: ${error.message}` — un mensaje único para todo el `afterSubmit` | `etapa=` + `error.name` + `error.message` + contexto. Las etapas son `verificacion`, `load`, `indexado-taxdetails`, `seteo-columnas`, `desaplicar-aplicar-nc`, `save` |
+| Marca permanente (Alt 2) | ninguna | cabecera `customrecord_l598_fact_elec_log` + detalle `customrecord_l598_fact_elec_dlog`, con `custrecord_l598_fact_elec_dlog_rtrans` → transacción |
+| Interceptable por Saved Search | ❌ | ✅ filtrando el detalle por transacción no vacía |
+
+### Por qué `record.create()` y no los Restlets de LOG
+
+`L598 - Grabar Cabecera LOG Proceso FE.js` y `L598 - Grabar Detalle LOG Proceso FE.js` son **Restlets** (`@NScriptType Restlet`, exponen `post`) que el middleware consume por HTTP. Desde un User Event no se invocan como módulo: haría falta un `N/https` dentro del guardado — latencia y un punto de fallo de red extra en el camino crítico. Se reutiliza la **estructura de datos**, no el transporte, copiando campo por campo lo que hacen esos Restlets: misma fecha `DATETIMETZ` en `AMERICA_BUENOS_AIRES`, mismo recorte del detalle a 3997 caracteres, misma opcionalidad del campo de mensaje.
+
+### Orden de las dos alternativas (no es cosmético)
+
+El `log.error` de la Alt 1 se emite **antes** del `record.create()` de la Alt 2. `log.error` no consume governance; el `create`+`save` sí. Si el fallo original fue por unidades agotadas, el log es la única evidencia que va a existir.
+
+### Límites explícitos
+
+- **Governance agotado:** si el `save` falló por falta de unidades, el marcado también falla. Ese caso queda cubierto sólo por el `log.error`, que se purga. La marca cubre validación, permisos y campo bloqueado — la mayoría.
+- **Alcance:** se marca ante **excepción** del camino legacy. Una línea que queda sin tax code por falta de `taxdetailsreference` **no lanza excepción** y hoy sólo deja un `log.error` en `setearColumnasConTaxDetails`. Extender la marca a ese caso es una decisión aparte, fuera de lo aprobado.
+- **Costo:** hasta 2 búsquedas de código + 2 `create`/`save` de custom record, **sólo en el camino de fallo**. El camino feliz sigue en 0 GU.
+- **`N/search` y `N/format` vuelven al `define`** — revierte parcialmente C1, que los había quitado por no usarse.
+
+### ⚠ Pendiente de dato de Tekiio (no bloquea el deploy)
+
+El objeto `LOG_FE` del script tiene dos constantes vacías que son **datos de la cuenta, no código**:
+
+| Constante | Dónde debe existir | Si queda vacía o no se resuelve |
+|---|---|---|
+| `CODIGO_ESTADO` | `customrecord_l598_fe_est_log.custrecord_l598_fe_est_log_codigo` | el detalle se graba **huérfano** (sin cabecera), pero **con** la referencia a la transacción — la Saved Search funciona igual |
+| `CODIGO_MENSAJE` | `customrecord_l598_msg_log.custrecord_l598_msg_log_codigo` | el detalle se graba sin el campo de mensaje; la descripción libre queda prefijada con `STC-A2` para poder filtrarla |
+
+El marcado **degrada sin romper** en ambos casos, y cada degradación deja su propio `log.error` diciendo qué constante falta. Definir los dos códigos es lo único que queda para que la marca quede completa y tipificada.
+
+✔ **Sintaxis:** `node --check` OK.
+
 ## 4. Alcance real: 9 deployments
 
 El script es **agnóstico del tipo de registro** (usa `context.newRecord.type`), así que su alcance no está en el código sino en los deployments. El original tiene **9**, todos `Liberado` / API 2.1:
@@ -123,6 +163,8 @@ Aun así, **el `_REF` necesita los 9**: es el reemplazo del original, y un tipo 
 - [x] Igualar `Ejecutar como rol` del deployment `_REF` al del original (`Administrador`) — 2026-08-03
 - [x] Deployments `_REF` de ramas: `vendorbill` y `vendorcredit` creados y caracterizados ✅ idénticos (2026-08-03/05) — con las 3 ramas alcanzables cubiertas (`item` multi-tasa, `expense` ausente, `apply`). Pendiente: 6 deployments de regresión (`invoice`, `estimate`, `creditmemo`, `cashsale`, `cashrefund`, `purchaseorder`)
 - [x] **Aprobación STC-A1 (Tekiio, 2026-08-20)** — avanzar sobre el `_REF` y revisar resultados de pruebas
+- [x] **STC-A2 aplicado (aprobación Tekiio, 2026-09-07)** — Alt 2 + Alt 1 sobre la estructura de LOG de FE (ver §3.ter). Pendiente: definir `CODIGO_ESTADO` y `CODIGO_MENSAJE` en la cuenta, y la Saved Search de intercepción previa al CFE
+- [ ] **STC-A3 sin respuesta** — ni la pregunta fiscal (¿impuestos compuestos por línea en UY?) ni la aprobación de la instrumentación de detección. Se conserva el comportamiento actual (primer match)
 - [x] **STC-A1 aplicado con guarda híbrida** + `node --check` OK — 2026-08-20 (ver §3.bis)
 - [x] Subir el `_REF` actualizado al File Cabinet y verificar que los deployments tomen la versión nueva — 2026-08-20
 - [x] **Corrección de diseño:** eliminada la bandera `escrituraInline` (no sobrevive entre entry points); `afterSubmit` decide por **equivalencia de valores** contra el índice de `taxdetails` de `context.newRecord` (0 GU) — 2026-08-20
@@ -132,4 +174,4 @@ Aun así, **el `_REF` necesita los 9**: es el reemplazo del original, y un tipo 
 - [ ] Residual `apply`: repetir con un `vendorcredit` de **2+ documentos aplicados** (la corrida de 15227 ejercitó el loop con n=1)
 - [ ] Caracterización completa con bordes (grupo/descuento/multi-tasa) — bloqueada por casos con bordes (pedido a Tekiio)
 - [ ] Tipos con CFE — bloqueados por middleware CAE (Tekiio revisando; probar además respuesta exitosa del facturador)
-- [ ] Aprobación STC-A2/A3 (Tekiio)
+- [ ] STC-A3: respuesta fiscal (¿impuestos compuestos por línea en UY?) + aprobación de la instrumentación de detección — STC-A2 ya aprobado y aplicado (2026-09-07)

@@ -14,6 +14,7 @@
  *   B1  filter O(n×m) dentro del loop -> Map indexado O(1) (misma semántica "primer match gana").
  *   B2  eliminado el 2º loop de solo-logging y los log.debug de dump (ruido en cada transacción).
  *   C1  eliminado N/search del define (se importaba pero no se usaba).
+ *       Reintroducido por STC-A2 (con N/format) para escribir el LOG de FE.
  *   D1  eliminado arrayTaxCodes (sólo alimentaba un log).
  *
  * ----------------------------------------------------------------------------
@@ -75,19 +76,87 @@
  * la corrida del 2026-08-20 sobre vendorcredit 15227 terminó ejecutando el legacy, así
  * que la sublist `apply` bajo la rama inline pura sigue sin caracterizar.
  *
+ * ----------------------------------------------------------------------------
+ * STC-A2 — Fallo silencioso del save (aprobado por Tekiio, 2026-09-07)
+ * ----------------------------------------------------------------------------
+ * Problema: el catch del afterSubmit sólo escribía en el log. Si el save de la
+ * rama legacy falla, la transacción ya quedó guardada por el sistema SIN las
+ * columnas de impuesto — el usuario ve un guardado exitoso y el CFE sale mal
+ * formado. Los Script Execution Logs se purgan, así que la evidencia desaparece.
+ *
+ * Aprobado: Alternativa 2 + Alternativa 1, reutilizando la estructura de LOG del
+ * proceso de Facturación Electrónica en lugar de un campo custom de cabecera.
+ *
+ *   Alt 1  el catch registra ETAPA + error.name + error.message + contexto, en vez
+ *          de un mensaje genérico que confundía "falló el save" con "no encontré
+ *          taxdetails". Se emite PRIMERO: log.error no consume governance, así que
+ *          es la única evidencia que sobrevive si el fallo fue por unidades agotadas.
+ *   Alt 2  se graba una cabecera (customrecord_l598_fact_elec_log) + un detalle
+ *          (customrecord_l598_fact_elec_dlog) con custrecord_..._dlog_rtrans
+ *          apuntando a la transacción. Marca permanente y consultable por Saved
+ *          Search para interceptar la transacción antes de la emisión del CFE.
+ *
+ * Se escribe con record.create() directo, NO invocando los scripts
+ * "Grabar Cabecera/Detalle LOG Proceso FE": esos son Restlets (@NScriptType Restlet,
+ * expuestos por post) que el middleware consume por HTTP. Desde un User Event
+ * llamarlos exigiría un N/https dentro del guardado — latencia y un punto de fallo
+ * de red extra. Se reutiliza la ESTRUCTURA DE DATOS, no el transporte, y se copia
+ * campo por campo lo que hacen esos Restlets (incluida la fecha formateada como
+ * DATETIMETZ en AMERICA_BUENOS_AIRES y el recorte del detalle a 3997 caracteres).
+ *
+ * Descartadas por Tekiio: Alt 0 (riesgo fiscal), Alt 3 (un throw en afterSubmit
+ * muestra el error pero NO revierte el guardado) y Alt 4 (bloqueo operativo).
+ *
+ * ⚠ LÍMITE CONOCIDO — governance agotado: si el save falló porque no quedan
+ * unidades, el record.create()+save() de la marca también va a fallar. Ese caso
+ * queda cubierto sólo por el log.error de la Alt 1, que se purga. La marca cubre
+ * los fallos por validación, permisos y campo bloqueado — la mayoría.
+ *
+ * ⚠ ALCANCE DELIBERADO: se marca ante EXCEPCIÓN del camino legacy. Una línea que
+ * queda sin tax code por falta de taxdetailsreference NO lanza excepción y hoy sólo
+ * deja un log.error en setearColumnasConTaxDetails. Extender la marca a ese caso es
+ * una decisión aparte, no cubierta por la aprobación de STC-A2.
+ *
+ * ⚠ PENDIENTE DE DATO (ver LOG_FE más abajo): los códigos de estado y de mensaje
+ * deben existir en customrecord_l598_fe_est_log / customrecord_l598_msg_log. Con
+ * LOG_FE.CODIGO_ESTADO vacío o no encontrado, el detalle se graba SIN cabecera pero
+ * CON la referencia a la transacción — la intercepción por Saved Search funciona igual.
+ *
  * NO incluido — requiere aprobación de Tekiio (ver docs/registro-aprobaciones.md):
- *   STC-A2  manejo de error del save (sólo aplica a la rama legacy).
  *   STC-A3  múltiples taxdetails por línea (se conserva el comportamiento actual: primer match).
  *
  * NO tocado (cambiaría comportamiento): isEmpty local (reglas propias sobre arrays/strings),
  *   desaplicarYAplicarNC (workaround de negocio en NC, se conserva en la rama legacy).
  * ============================================================================
  */
-define(["N/record", "N/runtime"], function (record, runtime) {
+define(["N/record", "N/runtime", "N/search", "N/format"], function (record, runtime, search, format) {
 	/* global define log */
 	/* eslint-disable quotes */
 
 	const SUBLISTS_DESTINO = ["item", "expense"];
+
+	const STC_A2 = "STC-A2";
+
+	/**
+	 * STC-A2 — estructura de LOG del proceso de Facturación Electrónica reutilizada
+	 * para marcar la transacción cuando el camino legacy no pudo completarse.
+	 *
+	 * ⚠ CODIGO_ESTADO y CODIGO_MENSAJE son DATOS de la cuenta, no código: deben
+	 * existir en customrecord_l598_fe_est_log.custrecord_l598_fe_est_log_codigo y en
+	 * customrecord_l598_msg_log.custrecord_l598_msg_log_codigo respectivamente.
+	 * Mientras estén vacíos o no se encuentren, el marcado degrada sin romper:
+	 *   sin estado  -> detalle huérfano (sin cabecera), con referencia a la transacción.
+	 *   sin mensaje -> detalle sin el campo msg, con la descripción libre prefijada
+	 *                  con "STC-A2" para poder filtrarla por Saved Search igual.
+	 */
+	const LOG_FE = {
+		RECORD_CABECERA: "customrecord_l598_fact_elec_log",
+		RECORD_DETALLE: "customrecord_l598_fact_elec_dlog",
+		RECORD_ESTADO: "customrecord_l598_fe_est_log",
+		RECORD_MENSAJE: "customrecord_l598_msg_log",
+		CODIGO_ESTADO: "",
+		CODIGO_MENSAJE: ""
+	};
 
 	/**
 	 * @param {UserEventContext.beforeSubmit} context
@@ -119,7 +188,7 @@ define(["N/record", "N/runtime"], function (record, runtime) {
 
 		} catch (error) {
 			// Un fallo acá jamás debe romper el guardado del usuario: se cae al legacy.
-			log.error(proceso, `STC-A1 rama=legacy motivo=excepcion - detalles: ${error.message}`);
+			log.error(proceso, `STC-A1 rama=legacy motivo=excepcion error=${error.name}: ${error.message}`);
 		}
 	};
 
@@ -129,6 +198,9 @@ define(["N/record", "N/runtime"], function (record, runtime) {
 	const afterSubmit = (context) => {
 
 		const proceso = "afterSubmit";
+
+		// STC-A2 (Alt 1): etapa alcanzada, para que el catch diga QUÉ falló y no sólo que algo falló.
+		let etapa = "verificacion";
 
 		try {
 			if (context.type == context.UserEventType.DELETE) {
@@ -146,21 +218,41 @@ define(["N/record", "N/runtime"], function (record, runtime) {
 			log.audit(proceso, `STC-A1 rama=legacy motivo=${verificacion.motivo} ${contextoLog(context, context.newRecord)}`);
 
 			// ----- Camino legacy: comportamiento original, sin cambios -----
+			etapa = "load";
 			const objRecord = record.load({
 				type: context.newRecord.type,
 				id: context.newRecord.id,
 			});
 
+			etapa = "indexado-taxdetails";
 			const taxDetailsByRef = indexarTaxDetails(objRecord);
 
+			etapa = "seteo-columnas";
 			SUBLISTS_DESTINO.forEach((tipoLista) => setearColumnasConTaxDetails(tipoLista, objRecord, taxDetailsByRef));
 
+			etapa = "desaplicar-aplicar-nc";
 			desaplicarYAplicarNC(context.newRecord.type, objRecord);
 
+			etapa = "save";
 			objRecord.save();
 
+			log.audit(proceso, `STC-A1 rama=legacy resultado=ok`);
+
 		} catch (error) {
-			log.error(proceso, `Error NetSuite Excepcion - detalles: ${error.message}`);
+
+			// STC-A2 (Alt 1) — diagnóstico específico, PRIMERO: log.error no consume
+			// governance, así que sobrevive incluso si el fallo fue por unidades agotadas.
+			log.error(proceso, `${STC_A2} fallo etapa=${etapa} error=${error.name}: ${error.message} ${contextoLog(context, context.newRecord)}`);
+
+			// STC-A2 (Alt 2) — marca permanente. Se graba SIEMPRE que el afterSubmit
+			// termine en excepción: la transacción ya está guardada y las columnas de
+			// impuesto pueden haber quedado incompletas, que es el riesgo fiscal.
+			registrarFalloEnLogFE({
+				etapa: etapa,
+				error: error,
+				idTransaccion: context.newRecord.id,
+				contexto: contextoLog(context, context.newRecord)
+			});
 		}
 	};
 
@@ -429,6 +521,138 @@ define(["N/record", "N/runtime"], function (record, runtime) {
 				}
 			}
 		}
+	}
+
+	// =======================================================================
+	// STC-A2 — Marcado del fallo en la estructura de LOG de FE (Alternativa 2)
+	// =======================================================================
+
+	/**
+	 * Graba cabecera + detalle de LOG de FE apuntando a la transacción afectada.
+	 * Nunca propaga: un fallo del marcado no debe enmascarar el error original
+	 * (que ya se logueó antes de llegar acá) ni agregar ruido al flujo del usuario.
+	 *
+	 * Costo de governance: acotado y sólo en el camino de fallo — hasta 2 búsquedas
+	 * de código + 2 create/save de custom record.
+	 *
+	 * @param {{etapa:string, error:Error, idTransaccion:*, contexto:string}} datos
+	 * @returns {boolean} true si quedó marcada de forma consultable
+	 */
+	function registrarFalloEnLogFE(datos) {
+
+		const proceso = "registrarFalloEnLogFE";
+
+		try {
+			const idCabecera = crearCabeceraLogFE();
+			const idDetalle = crearDetalleLogFE(idCabecera, datos);
+
+			log.audit(proceso, `${STC_A2} transaccion marcada idTransaccion=${datos.idTransaccion} cabecera=${isEmpty(idCabecera) ? "sin-cabecera" : idCabecera} detalle=${idDetalle}`);
+			return true;
+
+		} catch (error) {
+			// Caso típico: governance agotado — el mismo motivo por el que falló el save.
+			log.error(proceso, `${STC_A2} NO se pudo marcar la transaccion idTransaccion=${datos.idTransaccion}. El unico registro del fallo es el log.error previo, que se purga. Detalles: ${error.name}: ${error.message}`);
+			return false;
+		}
+	}
+
+	/**
+	 * Cabecera de LOG. Mismos campos que "Grabar Cabecera LOG Proceso FE".
+	 * Devuelve "" si no hay código de estado configurado o resoluble: en ese caso el
+	 * detalle se graba huérfano, que sigue siendo interceptable por Saved Search.
+	 * @returns {string}
+	 */
+	function crearCabeceraLogFE() {
+
+		const proceso = "crearCabeceraLogFE";
+
+		if (isEmpty(LOG_FE.CODIGO_ESTADO)) {
+			log.error(proceso, `${STC_A2} LOG_FE.CODIGO_ESTADO sin configurar: se graba solo el detalle, sin cabecera. Definir el codigo en ${LOG_FE.RECORD_ESTADO}.`);
+			return "";
+		}
+
+		const idEstado = buscarInternalIdPorCodigo(LOG_FE.RECORD_ESTADO, "custrecord_l598_fe_est_log_codigo", LOG_FE.CODIGO_ESTADO);
+
+		if (isEmpty(idEstado)) {
+			log.error(proceso, `${STC_A2} no se encontro el estado de log con codigo="${LOG_FE.CODIGO_ESTADO}" en ${LOG_FE.RECORD_ESTADO}: se graba solo el detalle, sin cabecera.`);
+			return "";
+		}
+
+		const recordLog = record.create({ type: LOG_FE.RECORD_CABECERA });
+
+		recordLog.setValue({ fieldId: "custrecord_l598_fact_elec_log_fecha", value: fechaLogFE() });
+		recordLog.setValue({ fieldId: "custrecord_l598_fact_elec_log_estado", value: idEstado });
+
+		return recordLog.save();
+	}
+
+	/**
+	 * Detalle de LOG. Mismos campos que "Grabar Detalle LOG Proceso FE", incluida la
+	 * opcionalidad del campo de mensaje (ese Restlet también graba sin resolverlo).
+	 * @param {string} idCabecera
+	 * @param {{etapa:string, error:Error, idTransaccion:*, contexto:string}} datos
+	 * @returns {string}
+	 */
+	function crearDetalleLogFE(idCabecera, datos) {
+
+		const proceso = "crearDetalleLogFE";
+		const recordDetalle = record.create({ type: LOG_FE.RECORD_DETALLE });
+
+		recordDetalle.setValue({ fieldId: "custrecord_l598_fact_elec_dlog_fecha", value: fechaLogFE() });
+
+		if (!isEmpty(idCabecera)) {
+			recordDetalle.setValue({ fieldId: "custrecord_l598_fact_elec_dlog_rlog", value: idCabecera });
+		}
+
+		if (!isEmpty(datos.idTransaccion)) {
+			recordDetalle.setValue({ fieldId: "custrecord_l598_fact_elec_dlog_rtrans", value: datos.idTransaccion });
+		}
+
+		if (!isEmpty(LOG_FE.CODIGO_MENSAJE)) {
+			const idMensaje = buscarInternalIdPorCodigo(LOG_FE.RECORD_MENSAJE, "custrecord_l598_msg_log_codigo", LOG_FE.CODIGO_MENSAJE);
+			if (isEmpty(idMensaje)) {
+				log.error(proceso, `${STC_A2} no se encontro el mensaje de log con codigo="${LOG_FE.CODIGO_MENSAJE}" en ${LOG_FE.RECORD_MENSAJE}: el detalle se graba sin mensaje.`);
+			} else {
+				recordDetalle.setValue({ fieldId: "custrecord_l598_fact_elec_dlog_msg", value: idMensaje });
+			}
+		} else {
+			log.error(proceso, `${STC_A2} LOG_FE.CODIGO_MENSAJE sin configurar: el detalle se graba sin mensaje. Definir el codigo en ${LOG_FE.RECORD_MENSAJE}.`);
+		}
+
+		// El prefijo STC-A2 permite filtrar por Saved Search aun sin codigo de mensaje.
+		const descripcion = `${STC_A2} fallo etapa=${datos.etapa} error=${datos.error.name}: ${datos.error.message} ${datos.contexto}`;
+		recordDetalle.setValue({ fieldId: "custrecord_l598_fact_elec_dlog_det", value: descripcion.substring(0, 3997) });
+
+		return recordDetalle.save();
+	}
+
+	/**
+	 * Resuelve el internalid de un custom record por su campo de código.
+	 * @returns {string} "" si no hay resultado
+	 */
+	function buscarInternalIdPorCodigo(recordType, campoCodigo, valorCodigo) {
+
+		const resultados = search.create({
+			type: recordType,
+			columns: ["internalid"],
+			filters: [[campoCodigo, "is", valorCodigo]]
+		}).run().getRange({ start: 0, end: 1 });
+
+		return (resultados && resultados.length > 0) ? resultados[0].getValue("internalid") : "";
+	}
+
+	/**
+	 * Fecha con el mismo formato que usan los Restlets de LOG de FE: DATETIMETZ
+	 * formateado en AMERICA_BUENOS_AIRES. Se replica tal cual para no introducir una
+	 * segunda convención de fecha en la misma tabla.
+	 * @returns {string}
+	 */
+	function fechaLogFE() {
+		return format.format({
+			value: new Date(),
+			type: format.Type.DATETIMETZ,
+			timezone: format.Timezone.AMERICA_BUENOS_AIRES
+		});
 	}
 
 	return {
