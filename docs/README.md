@@ -23,7 +23,7 @@ Localización fiscal Uruguay para NetSuite (SuiteTax). Proyecto de refactor de S
 - [STC-A1 — Diseño del experimento de diagnóstico](propuestas/STC-A1-experimento-diagnostico.md) — instrumento de solo lectura que validó el timing de `taxdetails`.
 - [STC-A1 — Resultados de la validación técnica](propuestas/STC-A1-resultados-para-tekiio.md) — los 8 escenarios del experimento (11/08).
 - [STC-A1 — Resultados de la implementación](propuestas/STC-A1-resultados-implementacion.md) — **30 GU → 0 medidas en la cuenta** (20/08). *Para compartir con Tekiio.*
-- [STC-A2 y STC-A3](propuestas/STC-A2-A3-manejo-error-y-multiples-taxdetails.md) — manejo de error del `save` y múltiples `taxdetails` por línea. ⏳ Pendientes.
+- [STC-A2 y STC-A3](propuestas/STC-A2-A3-manejo-error-y-multiples-taxdetails.md) — manejo de error del `save` y múltiples `taxdetails` por línea. **STC-A2: 🔧 aplicado y verificado** (07/09) · **STC-A3: ⏳ pendiente de definición fiscal**.
 - [Registro de aprobaciones](registro-aprobaciones.md) — estado de todos los cambios de Alto riesgo.
 
 ### Caracterización y medición
