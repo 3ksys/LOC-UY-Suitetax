@@ -1141,6 +1141,84 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
     }
 
     /**
+     * TRS-A7 — Corre una saved search paginando hasta agotar resultados.
+     * (aprobado por Tekiio, 2026-09-08)
+     *
+     * Las 3 saved searches de este afterSubmit leian `getRange({start:0, end:1000})`
+     * de una sola vez: pasadas las 1.000 filas, las lineas restantes quedaban sin
+     * nombre de articulo, unidad de medida, indicador de facturacion ni codigo de
+     * percepcion, y sin ningun aviso.
+     *
+     * El resultado solo cambia por encima de 1.000 filas. Por debajo devuelve
+     * exactamente lo mismo que antes, en el mismo orden.
+     *
+     * ----------------------------------------------------------------------------
+     * POR QUE NO SE USAN utilities.searchSaved / searchSavedPro
+     * ----------------------------------------------------------------------------
+     * La propuesta TRS-A7 decia reusar esos helpers, que efectivamente paginan.
+     * Al leerlos aparecieron tres costos que no estaban previstos:
+     *
+     * 1. `searchSavedPro` llama `armarArreglosSS()` sin condicion, que recorre
+     *    cada fila POR cada columna con un getValue. Nosotros mapeamos por indice
+     *    de columna, asi que ese array se descarta: hasta 1.000 x 5 = 5.000
+     *    getValue tirados por busqueda, y peor justamente en el caso de volumen
+     *    alto que este cambio viene a cubrir.
+     * 2. `searchSaved` emite 2 `log.audit` por llamada, uno con JSON.stringify del
+     *    array de ids. Es exactamente el patron que TRS-B4 acaba de sacar del
+     *    camino caliente de este script.
+     * 3. Los dos capturan la excepcion y la devuelven como `objRespuesta.error`.
+     *    Este afterSubmit NO tiene try/catch, asi que hoy un fallo de busqueda es
+     *    un error no manejado y ruidoso. Adoptarlos sin chequear ese flag
+     *    convertiria un fallo ruidoso en uno silencioso, con lineas incompletas
+     *    viajando al CFE — el mismo defecto que STC-A2. Y chequearlo implica
+     *    escribir el guard de todos modos.
+     *
+     * ⚠️ Trampa aparte, para el dia que se los use: `operadorBusqueda()` hace
+     * switch sobre nombres en MAYUSCULA ('ANYOF') y no tiene rama default, asi que
+     * pasarle `search.Operator.ANYOF` — que vale 'anyof' — devuelve string vacio y
+     * el createFilter falla dentro del try del helper. Es el mismo tipo de desajuste
+     * de mayusculas contra un enum de NetSuite que TRS-A4.
+     *
+     * Este loop local preserva la semantica de error actual (la excepcion propaga),
+     * no agrega pasadas sobre el result set y no acopla a esa trampa. El costo es
+     * que la logica de paginado queda repetida en el proyecto; es el mas barato de
+     * los cuatro.
+     *
+     * @param {string} idSavedSearch
+     * @param {*} filtro filtro ya construido con search.createFilter
+     * @returns {*[]} todos los resultados, en el orden en que los devuelve la busqueda
+     */
+    function correrSavedSearchPaginada(idSavedSearch, filtro) {
+
+      const PASO = 1000; // maximo que admite getRange por llamada
+
+      const savedSearch = search.load({ id: idSavedSearch });
+      savedSearch.filters.push(filtro);
+      const resultSet = savedSearch.run();
+
+      const resultados = [];
+      let indice = 0;
+      let pagina;
+
+      do {
+        pagina = resultSet.getRange({ start: indice, end: indice + PASO });
+
+        if (pagina && pagina.length > 0) {
+          for (let i = 0; i < pagina.length; i++) {
+            resultados.push(pagina[i]);
+          }
+        }
+
+        indice += PASO;
+
+        // Una pagina incompleta ya es la ultima: cortar aca evita la llamada extra
+        // que hace el paginado de utilities cuando el total es multiplo exacto de PASO.
+      } while (pagina && pagina.length === PASO);
+
+      return resultados;
+    }
+
+    /**
      * TRS-D4 — Saved search `customsearch_l598_articulos`, extraida tal cual del
      * afterSubmit. Devuelve el array que antes se llenaba por efecto colateral.
      */
@@ -1158,16 +1236,8 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
             values: arrayItem,
           });
 
-          const saveSearchResults = search.load({
-            id: 'customsearch_l598_articulos',
-          });
-          saveSearchResults.filters.push(filtro);
-          const resultSet = saveSearchResults.run();
-
-          const searchresults = resultSet.getRange({
-            start: 0,
-            end: 1000,
-          });
+          // TRS-A7: era load + run + getRange({start:0, end:1000}) sin paginar.
+          const searchresults = correrSavedSearchPaginada('customsearch_l598_articulos', filtro);
 
           if (!l598isEmpty(searchresults)) {
             if (searchresults.length > 0) {
@@ -1210,16 +1280,8 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
             values: arrayItemTime,
           });
 
-          const saveSearchResults = search.load({
-            id: 'customsearch_l598_timebill',
-          });
-          saveSearchResults.filters.push(filtro);
-          const resultSet = saveSearchResults.run();
-
-          const searchresults = resultSet.getRange({
-            start: 0,
-            end: 1000,
-          });
+          // TRS-A7: era load + run + getRange({start:0, end:1000}) sin paginar.
+          const searchresults = correrSavedSearchPaginada('customsearch_l598_timebill', filtro);
 
           if (!l598isEmpty(searchresults)) {
             if (searchresults.length > 0) {
@@ -1260,16 +1322,8 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
             values: arrayTaxCodes,
           });
 
-          const saveSearch = search.load({
-            id: 'customsearch_l598_cod_impuestos',
-          });
-          saveSearch.filters.push(filtro);
-          const resultSet = saveSearch.run();
-
-          const searchresultsTC = resultSet.getRange({
-            start: 0,
-            end: 1000,
-          });
+          // TRS-A7: era load + run + getRange({start:0, end:1000}) sin paginar.
+          const searchresultsTC = correrSavedSearchPaginada('customsearch_l598_cod_impuestos', filtro);
 
           if (!l598isEmpty(searchresultsTC)) {
             if (searchresultsTC.length > 0) {
