@@ -33,8 +33,8 @@ UserEvent "ómnibus" de la localización Uruguay que corre sobre casi todas las 
 
 | ID | Hallazgo | Evidencia | Riesgo |
 |---|---|---|:--:|
-| TRS-A1 | Patrón `afterSubmit` + `record.load()` + `save()` para setear campos calculados — el mismo patrón de STC-A1, medido allí en **30 GU por guardado**. ⚠️ La cláusula "el save además re-dispara los UserEvents del registro" **quedó en duda el 2026-08-20** (ver §7.4): en la corrida del STC el `save()` legacy corrió y el script de diagnóstico —otro UserEvent sobre el mismo registro— no volvió a dispararse. El ahorro de load+save no depende de esa cláusula, pero no se cita como beneficio hasta confirmarla. | load L1208, save L1915-1918 | 🔴 |
-| TRS-A2 | Para `salesorder`/`transferorder` **toda** la lógica se saltea (L1212, L1864, L1892) pero el load+save se ejecuta igual: se re-guarda un registro sin ningún cambio en cada submit. Explica gran parte del baseline de Orden de Venta (1.5s). | L1207-1212, L1915 | 🔴 |
+| TRS-A1 | Patrón `afterSubmit` + `record.load()` + `save()` para setear campos calculados — el mismo patrón de STC-A1, medido allí en **30 GU por guardado**. ❌ La cláusula "el save además re-dispara los UserEvents del registro" está **descartada** (2026-09-08, ver §7.4): dos observaciones independientes — el diagnóstico en `vendorcredit` 15227 y `Seteo de Tax Codes` en la invoice 15822 — muestran que el `save()` de un UserEvent no re-dispara los UserEvents de otros scripts. **El ahorro de load+save no depende de esa cláusula y se sostiene solo; la cláusula no se cita más como beneficio.** | load L1208, save L1915-1918 | 🔴 |
+| TRS-A2 ✅🔧 | **Aprobado por Tekiio 2026-09-08 y aplicado — ver [§3.sexies](#3sexies-unidad-5--trs-a2-early-return-aplicada-2026-09-08).** Para `salesorder`/`transferorder` **toda** la lógica se saltea (L1212, L1864, L1892) pero el load+save se ejecuta igual: se re-guarda un registro sin ningún cambio en cada submit. Explica gran parte del baseline de Orden de Venta (1.5s). | L1207-1212, L1915 | 🔴 |
 | TRS-A3 | **(nuevo)** En beforeSubmit DELETE se llama `objRecord.delete({type, id})` sobre el objeto Record; el objeto Record **no tiene método `delete`** en N/record (la función es del módulo: `record.delete`). El TypeError cae en el catch que solo loguea → las retenciones asociadas (`customrecord_l598_retencion`, `customrecord_l598_retencion_nc`) muy probablemente **nunca se borran** y quedan huérfanas al borrar NC de compra / Resguardos. *Hecho verificado:* la llamada y el catch. *Inferencia:* el efecto en runtime — confirmar con logs de la cuenta ("Ocurrio un error al borrar…"). | L1146-1152 (vendorcredit), L1180-1186 (resguardo) | 🔴 |
 | TRS-A4 | **(nuevo)** El bloque de beforeLoad está condicionado a `executionContext == "userevent"` (minúscula); `runtime.executionContext` devuelve valores del enum en mayúsculas (`USEREVENT`, `USERINTERFACE`) → la condición sería siempre falsa y el bloque, **código muerto**. El comentario L2013-2019 ("Se comenta esta funcionalidad porque está repetida… el script de cliente también la posee") sugiere desactivación intencional por la vía de la condición. Confirmar en la cuenta (los `log.debug` internos nunca deberían aparecer) y decidir: remover (D) o reactivar (cambio de comportamiento). Incluye además la cláusula redundante `recType != "vendorbill" && recType == "invoice"`. | L2029; comentario L2013-2019 | 🔴 (verificar) |
 | TRS-A5 | `getNumberLiteral()` llama `alert(...)` (API de navegador, inexistente en server) cuando `isNaN(n)`; el ReferenceError cae al catch y la función devuelve `"NO DISPONIBLE"`, que puede terminar grabado en `custbody_l598_monto_escrito` (documento fiscal impreso). | L267-270, catch L359-363 | 🔴 |
@@ -262,6 +262,51 @@ Las dos funciones nuevas usaban `recType` sin recibirlo como parámetro. A difer
 
 **Conclusión de método:** en un refactor que mueve código programáticamente, `node --check` verifica que el archivo *parsea*, no que *funciona*. El chequeo que sirve es el de alcance: para cada función, calcular sus locales (declaraciones + parámetros + destructuring) y buscar referencias a variables que ya no estén en su scope, excluyendo accesos a propiedad. Es lo único que atrapó los tres.
 
+## 3.sexies Unidad 5 — TRS-A2: early return (aplicada 2026-09-08)
+
+**Aprobación:** Tekiio, 2026-09-08, junto con TRS-A1 y TRS-A7. Es el primero de los tres que se aplica: no depende de nada y su validación es la más simple.
+
+### Verificación previa — no se aplicó sobre la palabra de la propuesta
+
+La propuesta afirmaba que el `afterSubmit` es un no-op para `salesorder`/`transferorder`. Se trazó el camino completo antes de tocar nada, porque si alguna escritura se hubiera pasado por alto **el early return la eliminaría en silencio** — y eso sería un cambio de comportamiento real, no formal.
+
+| Paso del `afterSubmit` | Con `salesorder` / `transferorder` |
+|---|---|
+| `record.load()` | **corre** — ~10 GU |
+| Bloque de manejo de líneas | salteado por su guard de tipo |
+| Bloque del nro. de comprobante | salteado por su guard de tipo |
+| `desaplicarYAplicarNC` | **no-op** — todo su cuerpo está dentro de `if (recType == "creditmemo")` |
+| `objRecord.save()` | **corre** — ~20 GU, sin escribir nada |
+
+Entre medio, dos `log.debug`. Confirmado: un `load`+`save` completo para dejar el registro igual.
+
+**El llenado de sucursal vacía, que sí aplica a estos tipos, no se toca.** Ocurre en `beforeSubmit`, en un `setValue` que está *antes y por fuera* del guard de exclusión por tipo. Y el cierre de `beforeSubmit` solo tiene los dos borrados de retenciones, guardados por `vendorcredit` y resguardo.
+
+### Lo aplicado
+
+Un early return **antes del `load`**, que es donde empieza el costo. Los dos guards por tipo de más abajo **quedan a propósito**: ahora son redundantes, pero dicen lo mismo que el early return en vez de contradecirlo, y sostienen el comportamiento si alguna vez esta salida se mueve o se revierte.
+
+Se agrega un `log.audit` con la rama tomada, por el mismo criterio que en STC-A1: allí un camino feliz silencioso fue justamente lo que oculta que el ahorro no se materializaba, hasta que se midió el governance.
+
+### Lo que este cambio NO ahorra, y por qué hay que decirlo
+
+El análisis original citaba, además del load+save, que *"el save re-dispara los UserEvents del registro"*. **Es falso** y quedó cerrado el 2026-09-08 (ver §7.4): quitar el save **no** elimina una segunda ejecución de otros scripts, porque esa segunda ejecución nunca ocurría.
+
+El ahorro es el load+save en sí, que alcanza de sobra. Se anota porque **un beneficio inflado en la propuesta es un beneficio que la medición va a desmentir**, y perder credibilidad en la medición cuesta más que el beneficio que se gana citando de más.
+
+### Criterio de caracterización
+
+| Qué | Esperado |
+|---|---|
+| Log del `afterSubmit` | `TRS-A2 early-return recordType=salesorder id=<n> eventType=<create\|edit>` |
+| APM, este script | `Usage Count = 0` y `Record Operations = 0` en ese guardado |
+| El registro guardado | **idéntico** al de una orden guardada antes del cambio, incluida `custbody_l598_sucursal` |
+| Ejecuciones por script en el Execution Log | **las mismas que antes** (una por script) — porque la cascada no existía. Si aparecieran menos, la premisa de §7.4 estaría mal y habría que reabrirla |
+
+La última fila es el control que convierte a §7.4 en falsable: si el early return hiciera desaparecer ejecuciones de otros scripts, la conclusión de que no hay cascada quedaría refutada.
+
+✔ **Sintaxis:** `node --check` OK.
+
 ## 4. Recomendaciones Grupo A (aparte, requieren aprobación Tekiio)
 
 1. **TRS-A1 — Mover la lógica de afterSubmit a beforeSubmit (equivalente a STC-A1, criterio #8).** Eliminaría el `record.load()` (~10 GU) + `save()` (~20 GU) por transacción y el re-disparo de UserEvents del save extra — sobre un script presente en casi todas las transacciones (4.1-9.6s medidos). Misma validación obligatoria que STC-A1 (¿`taxdetails` poblado en beforeSubmit en todos los contextos?) **más dos salvedades propias**: (a) `custbody_l598_nro_comprobante = recId` (L1883-1886) no puede moverse a beforeSubmit en CREATE porque el id aún no existe — haría falta un híbrido (p. ej. `submitFields` residual en afterSubmit, que el propio código tiene ensayado y comentado en L1872-1882); (b) el toggle apply de creditmemo (L1891-1913) opera sobre el estado post-guardado. Se recomienda extender el experimento de diagnóstico de [STC-A1](../propuestas/STC-A1-entrypoint-seteo-tax-codes.md) a este script. Además, decidir junto con STC-A1 el **dueño único** del seteo de tax codes (hoy duplicado, TRS-D1).
@@ -298,7 +343,13 @@ Contexto UAT: órdenes de venta/compra y factura/NC de **compra** están OK; **f
 1. **Deployments reales** de este script (tipos de registro y cantidad) — determina el alcance de caracterización, igual que en STC.
 2. **Disponibilidad de `context.newRecord` en beforeSubmit DELETE** (L966 + L1134): si no estuviera disponible, la rama DELETE fallaría antes del `objRecord.delete` (TRS-A3 aplica igual, con otro síntoma). Confirmar con logs.
 3. **Si el bloque beforeLoad corre alguna vez** (TRS-A4): confirmar valores reales de `runtime.executionContext` en la cuenta.
-4. **¿El `save()` de un UserEvent re-dispara los UserEvents de otros scripts?** ⚠️ **Premisa del proyecto puesta en duda por evidencia del 2026-08-20.** En la corrida de STC sobre `vendorcredit` 15227, el `afterSubmit` legacy ejecutó `load`+`save` (confirmado por APM: 2 operaciones de registro) y el script de diagnóstico —**otro** UserEvent desplegado sobre el mismo tipo de registro— registró **exactamente 2 entradas**, no 4. Coincide con el comportamiento documentado de NetSuite (un UserEvent no dispara otros UserEvents). **Es una premisa transversal:** sostiene parcialmente TRS-A1, TRS-A2, ARI-A1, SUI-A1, CDF-A7 y el patrón sistémico del [resumen de scripts críticos](../resumen-analisis-scripts-criticos.md). Confirmación pendiente: contar las entradas del Execution Log del script de diagnóstico. Queda además abierta la **interacción/orden con `L598 - Seteo de Tax Codes`** en tipos compartidos.
+4. **¿El `save()` de un UserEvent re-dispara los UserEvents de otros scripts?** ⚠️ **Premisa del proyecto puesta en duda por evidencia del 2026-08-20.** En la corrida de STC sobre `vendorcredit` 15227, el `afterSubmit` legacy ejecutó `load`+`save` (confirmado por APM: 2 operaciones de registro) y el script de diagnóstico —**otro** UserEvent desplegado sobre el mismo tipo de registro— registró **exactamente 2 entradas**, no 4. Coincide con el comportamiento documentado de NetSuite (un UserEvent no dispara otros UserEvents). **Es una premisa transversal:** sostiene parcialmente TRS-A1, TRS-A2, ARI-A1, SUI-A1, CDF-A7 y el patrón sistémico del [resumen de scripts críticos](../resumen-analisis-scripts-criticos.md).
+
+   ✅ **Cerrada el 2026-09-08 — el `save()` NO re-dispara UserEvents de otros scripts.** Segunda observación independiente, y más fuerte que la primera porque cambia las tres variables: otro tipo de registro (`invoice` en vez de `vendorcredit`), otro script observador (`Seteo de Tax Codes` en vez del diagnóstico) y la dirección inversa (el `save` lo hace **este** script y el observador es el otro). Sobre la invoice 15822, el `afterSubmit` de este script guardó a las `1:21:19` y STC **no volvió a ejecutarse** — su siguiente entrada es del guardado del día siguiente, 15 horas después. Evidencia: [caracterización de STC § invoice 15822](../caracterizacion/1-seteo-de-tax-codes.md#invoice-15822--quién-escribe-las-columnas-en-invoice-2026-09-07).
+
+   **Consecuencia:** ningún hallazgo de este script puede citar el fin de la cascada como beneficio. El ahorro de load+save se sostiene solo y no lo necesita.
+
+   La **interacción/orden con `L598 - Seteo de Tax Codes`** en tipos compartidos también quedó resuelta el 2026-09-08, y en sentido contrario al esperado: no hay cascada, pero **los dos scripts sí corren en el mismo guardado**, STC primero y este después, sobrescribiendo las mismas columnas con el mismo valor (TRS-D1).
 5. **Definiciones de las 3 saved searches** (columnas totales, filtros propios) — necesarias para dimensionar TRS-B6 (SuiteQL) y el riesgo del acceso posicional.
 6. **Volúmenes reales** (>1000 artículos/tax codes por transacción) para priorizar TRS-A7.
 7. **`taxdetails` en beforeSubmit** (precondición de TRS-A1): pendiente del experimento de diagnóstico propuesto en STC-A1.

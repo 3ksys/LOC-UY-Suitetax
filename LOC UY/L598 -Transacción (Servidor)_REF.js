@@ -1913,6 +1913,43 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
       const recType = scriptContext.newRecord.type;
 
       if (scriptContext.type != scriptContext.UserEventType.DELETE) {
+
+        /**
+         * TRS-A2 — early return (aprobado por Tekiio, 2026-09-08).
+         *
+         * Para 'salesorder' y 'transferorder' este entry point no escribia nada:
+         * el bloque de manejo de lineas y el del numero de comprobante ya los
+         * excluian por tipo, y desaplicarYAplicarNC tiene todo su cuerpo dentro
+         * de un guard por 'creditmemo'. Lo unico que se ejecutaba era el load y
+         * el save: ~30 GU y un guardado extra del registro por cada orden, para
+         * dejarlo exactamente igual.
+         *
+         * Se sale antes del load: es el punto donde empieza el costo.
+         *
+         * NO afecta el llenado de sucursal vacia, que si aplica a estos tipos:
+         * eso ocurre en beforeSubmit, en el setValue de custbody_l598_sucursal
+         * que esta antes y por fuera de su propio guard de exclusion por tipo.
+         * No se toca.
+         *
+         * Los dos guards por tipo de abajo quedan a proposito. Ahora son
+         * redundantes, pero dicen lo mismo que este early return — no lo
+         * contradicen — y sostienen el comportamiento si alguna vez se mueve
+         * o revierte esta salida temprana.
+         *
+         * Lo que este cambio NO ahorra: el save eliminado **no** re-disparaba
+         * los UserEvents de otros scripts. La premisa contraria estaba en duda
+         * en el informe (§7.4) y los logs de la invoice 15822 la cierran: el
+         * save de este afterSubmit corrio a las 1:21:19 y `Seteo de Tax Codes`
+         * — otro UserEvent sobre el mismo registro — no volvio a ejecutarse.
+         * Coincide con el comportamiento documentado de NetSuite. El ahorro es
+         * el load+save en si, que alcanza; no se le atribuye un efecto en
+         * cascada que no existe.
+         */
+        if (recType == 'transferorder' || recType == 'salesorder') {
+          log.audit(proceso, `TRS-A2 early-return recordType=${recType} id=${recId} eventType=${scriptContext.type}`);
+          return;
+        }
+
         const objRecord = record.load({ type: recType, id: recId });
 
         log.debug(proceso, `INICIO - afterSubmit / id: ${recId} / type: ${recType}`);
