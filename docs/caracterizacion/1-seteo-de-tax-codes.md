@@ -351,6 +351,39 @@ Dos corridas sobre la misma transacción. Detalle del marcado y del registro gen
 
 **Defecto menor detectado (Grupo D, sin efecto en comportamiento):** los tres `log.error` de `setearColumnasConTaxDetails` dicen `linea de articulos nro: 0`, `nro: 1`, `nro: 3` **sin nombrar la sublista**. El `nro: 0` era `expense[0]`; los otros dos, `item[1]` e `item[3]`. Si ambas sublistas fallaran en la línea 0 habría dos mensajes idénticos apuntando a cosas distintas.
 
+### Invoice 15822 — quién escribe las columnas en `invoice` (2026-09-07)
+
+Tekiio reportó la primera generación exitosa de CAE sobre la **invoice 15822** (`E-Factura Local A-4-15822`, `CAE : 48`), lo que destraba la caracterización de los tipos con CFE. Antes de usarla como baseline se determinó **qué scripts corrieron sobre ella**.
+
+| Script | Creación (03/09) | Edición (04/09) |
+|---|---|---|
+| `L598 - Seteo de Tax Codes` (`CUSTOMDEPLOY1`) | 1:21:14 → 1:21:16 am | 4:09:47 → 4:09:50 pm |
+| `L598 -Transacción (Servidor)` (`CUSTOMDEPLOY_L598_TRANSACCION_SERVIDOR`) | 1:21:17 → 1:21:19 am | 4:09:50 → 4:09:54 pm |
+| `REF - L598 - Seteo de Tax Codes` | `TOTAL: 0` — nunca corrió | `TOTAL: 0` |
+
+**Corrieron los dos, dos veces cada uno.** Y el log da el **orden de escritura**, que era el dato que faltaba:
+
+```
+1:21:14  STC   afterSubmit INICIO id interno: 15822
+1:21:15  STC   setearColumnasConTaxDetails   indice 0 y 1 / codigo impuesto: 26 / tasa: 22
+1:21:16  STC   afterSubmit FIN
+1:21:17  TRS   afterSubmit INICIO id: 15822
+1:21:17  TRS   setearCodigoImpuestosLineas   arrayTaxDetails 15822_1 / 15822_4, taxCode 26
+1:21:19  TRS   afterSubmit FIN
+```
+
+**STC escribe primero; `Transacción (Servidor)` escribe encima, con el mismo valor.** Los dos leen `taxdetails` por su cuenta y llegan al mismo resultado. Es la duplicación **TRS-D1 observada, con orden establecido**: si alguna vez divergieran, **gana TRS por llegar último**.
+
+#### Tres consecuencias
+
+**1. 15822 NO sirve como baseline de `invoice`.** El valor que quedó en el registro lo escribió TRS, no el STC original. Un diff del `_REF` contra 15822 mediría si el `_REF` reproduce la salida del script *duplicado*. Es la misma limitación del baseline de `vendorbill` 14990 — pero acá con **prueba del orden** en lugar de una inferencia por audiencia. Un baseline limpio de `invoice` requiere una transacción guardada con un rol que dispare **solo** el STC, y eso hay que construirlo a propósito.
+
+**2. En `invoice`, los 30 GU de STC son gasto descartado.** El `load`+`save` del `afterSubmit` produce un valor que TRS sobrescribe dos segundos después. El ahorro de STC-A1 en `invoice` no es solo performance: elimina trabajo cuyo resultado **no sobrevive**.
+
+**3. El flujo de CAE dispara otro guardado.** El detalle de LOG 3060 tiene fecha `16:09:22` y el `Before Submit` de ambos scripts es `4:09:27 pm`: la generación del CAE escribe en el registro y **ese** guardado vuelve a disparar a los dos escritores. El proceso de emisión no es de solo lectura — paga los 30 GU duplicados cada vez que emite.
+
+> **Nota de método.** Acá alcanzó con buscar el internal id en la columna `DETAIL` del Execution Log, porque los dos scripts lo loguean (`id interno:` en STC, `id:` en TRS). Eso evita adivinar ventanas de tiempo. El APM acotado a un log sigue siendo la herramienta cuando hay que probar una **ausencia** en un guardado puntual, como en la 15826.
+
 ### Plan de regresión — 6 deployments restantes (definido 2026-08-05)
 
 Los 6 tipos restantes recorren la misma rama `item` ya caracterizada; el objetivo es regresión (que el `_REF` exista y se comporte igual en cada tipo donde el original está deployado). Se dividen en tres niveles según seguridad CFE y existencia de baseline:

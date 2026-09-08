@@ -42,6 +42,22 @@ El `objRecord.save()` que persiste los tax codes está dentro de ese bloque. **S
 
 **La consecuencia es fiscal, no técnica:** `custcol_l598_codigo_impuesto` y `custcol_l598_tasa_impuesto` alimentan el CFE. Una transacción sin esos valores produce un **CFE mal formado**, y el problema se descubre cuando DGI lo rechaza — o peor, cuando no lo rechaza.
 
+> ⚠️ **Alcance corregido (2026-09-07) — el riesgo fiscal no es uniforme por tipo de transacción.**
+>
+> Los logs de la invoice 15822 probaron que en varios tipos hay **dos** scripts escribiendo esas dos columnas: este y `L598 -Transacción (Servidor)`, que por la duplicación **TRS-D1** hace el mismo trabajo y **escribe último**. Donde eso pasa, un fallo silencioso del `save` de STC **queda tapado**: TRS escribe los tax codes igual y el CFE sale bien formado.
+>
+> El riesgo fiscal de STC-A2 es pleno solo donde STC es el **único** escritor:
+>
+> | Tipo | ¿TRS escribe estas columnas? | Riesgo de STC-A2 |
+> |---|---|---|
+> | `purchaseorder` | **no tiene deployment de TRS** | 🔴 pleno |
+> | `salesorder` | tiene deployment, pero hace *early return* (TRS-A2) | 🔴 pleno |
+> | `invoice`, `creditmemo`, `cashsale`, `cashrefund`, `estimate`, `vendorbill`, `vendorcredit` | sí | 🟡 fallo enmascarado |
+>
+> Esto **no invalida** el marcado. Seguir sin saber que el `save` falló es un problema en cualquier tipo, y depender de que otro script tape el fallo es una **garantía accidental, no un diseño** — desaparece el día que se defina un dueño único (TRS-D1). Pero acota dónde la consecuencia es *fiscal* y dónde es solo de trazabilidad, y eso cambia la prioridad de la Saved Search de intercepción.
+>
+> Evidencia: [caracterización § invoice 15822](../caracterizacion/1-seteo-de-tax-codes.md#invoice-15822--quién-escribe-las-columnas-en-invoice-2026-09-07).
+
 **Agravante de detectabilidad:** los Script Execution Logs de NetSuite se purgan. Un problema fiscal puede aparecer meses después, cuando la única evidencia de qué pasó ya no existe.
 
 ## 2. Qué cambió con STC-A1 (y qué no)
