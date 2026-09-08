@@ -56,6 +56,8 @@ El `objRecord.save()` que persiste los tax codes está dentro de ese bloque. **S
 >
 > Esto **no invalida** el marcado. Seguir sin saber que el `save` falló es un problema en cualquier tipo, y depender de que otro script tape el fallo es una **garantía accidental, no un diseño** — desaparece el día que se defina un dueño único (TRS-D1). Pero acota dónde la consecuencia es *fiscal* y dónde es solo de trazabilidad, y eso cambia la prioridad de la Saved Search de intercepción.
 >
+> ⚠️ **Un segundo mecanismo, peor que el primero (2026-09-08).** Los dos caminos de emisión — `Obtener Inf Transacciones FE:1373` y `Conexion Directa FE (SS):2053` — leen `tasa_impuesto` y, **si está vacía, usan `0`**. Es decir: si falla la escritura del **código**, el CFE sale sin código y es más probable que DGI lo rechace; si falla la de la **tasa**, el comprobante sale **bien formado con impuesto cero**, pasa el control y queda mal declarado. Esto es independiente de la duplicación con `Transacción (Servidor)`: ese script escribe la tasa pero **no la lee**, así que no hay nada que la repare aguas abajo. Detalle en [TRS-D1 §5](TRS-D1-dueno-unico-tax-codes.md#5-por-qué-tasa_impuesto-no-puede-dejar-de-escribirse).
+>
 > Evidencia: [caracterización § invoice 15822](../caracterizacion/1-seteo-de-tax-codes.md#invoice-15822--quién-escribe-las-columnas-en-invoice-2026-09-07).
 
 **Agravante de detectabilidad:** los Script Execution Logs de NetSuite se purgan. Un problema fiscal puede aparecer meses después, cuando la única evidencia de qué pasó ya no existe.
