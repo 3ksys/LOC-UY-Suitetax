@@ -185,4 +185,4 @@ Nuestra recomendación de orden, si hay que priorizar: **GTX-A1** (declaración 
 
 ---
 
-*Detalle técnico con evidencia línea por línea: [Grupo A de Transacción (Servidor)](TRS-A-transaccion-servidor.md) · [STC-A2 y STC-A3](STC-A2-A3-manejo-error-y-multiples-taxdetails.md) · [informes de análisis por script](../README.md#informes-por-script-analisis-y-refactor). Estado siempre actualizado en el [registro de aprobaciones](../registro-aprobaciones.md).*
+*Detalle técnico con evidencia línea por línea: [Grupo A de Transacción (Servidor)](TRS-A-transaccion-servidor.md) · [STC-A2 y STC-A3](STC-A2-A3-manejo-error-y-multiples-taxdetails.md) · [informes de análisis por script](../README.md#informes-por-script-análisis-y-refactor). Estado siempre actualizado en el [registro de aprobaciones](../registro-aprobaciones.md).*

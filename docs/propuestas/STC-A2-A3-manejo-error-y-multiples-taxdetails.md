@@ -25,7 +25,7 @@ Los dos necesitan definición de Tekiio, pero **no son el mismo tipo de pendient
 
 # STC-A2 — El fallo silencioso del `save()`
 
-> **Resuelto (2026-09-07).** Tekiio aprobó la **Alternativa 2 + Alternativa 1**, con la precisión de reutilizar las tablas y registros de detalle de LOG del proceso de Facturación Electrónica (`customrecord_l598_fact_elec_log` / `_dlog`) en lugar de un campo custom de cabecera — lo que responde el primer bullet del §5. Implementación, límites y los dos códigos que faltan definir en la cuenta: [refactor §3.ter](../refactors/1-seteo-de-tax-codes.md#3ter-stc-a2--marcado-del-fallo-aplicado-2026-09-07).
+> **Resuelto (2026-09-07).** Tekiio aprobó la **Alternativa 2 + Alternativa 1**, con la precisión de reutilizar las tablas y registros de detalle de LOG del proceso de Facturación Electrónica (`customrecord_l598_fact_elec_log` / `_dlog`) en lugar de un campo custom de cabecera — lo que responde el primer bullet del §5. Implementación, límites y los dos códigos que faltan definir en la cuenta: [refactor §3.ter](../refactors/1-seteo-de-tax-codes.md#3ter-stc-a2--marcado-del-fallo-aplicada-2026-09-07).
 
 ## 1. El problema
 
