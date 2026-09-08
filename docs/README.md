@@ -24,6 +24,7 @@ Localización fiscal Uruguay para NetSuite (SuiteTax). Proyecto de refactor de S
 - [STC-A1 — Resultados de la validación técnica](propuestas/STC-A1-resultados-para-tekiio.md) — los 8 escenarios del experimento (11/08).
 - [STC-A1 — Resultados de la implementación](propuestas/STC-A1-resultados-implementacion.md) — **30 GU → 0 medidas en la cuenta** (20/08). *Para compartir con Tekiio.*
 - [STC-A2 y STC-A3](propuestas/STC-A2-A3-manejo-error-y-multiples-taxdetails.md) — manejo de error del `save` y múltiples `taxdetails` por línea. **STC-A2: 🔧 aplicado y verificado** (07/09) · **STC-A3: ⏳ pendiente de definición fiscal**.
+- [TRS-D1 — Dueño único de las columnas de tax codes](propuestas/TRS-D1-dueno-unico-tax-codes.md) — 3 UserEvents escriben las mismas columnas y el dueño depende de un orden no garantizado. 🔴 **Bloquea TRS-A1.** ⏳ Pendiente. *Para compartir con Tekiio.*
 - [Grupo A de Transacción (Servidor)](propuestas/TRS-A-transaccion-servidor.md) — los 8 hallazgos de correctitud del script #1 de la matriz, agrupados por tipo de decisión. ⏳ Pendientes. *Para compartir con Tekiio.*
 - [Registro de aprobaciones](registro-aprobaciones.md) — estado de todos los cambios de Alto riesgo.
 
