@@ -372,16 +372,23 @@ Por debajo de 1.000 filas el output debe ser **idéntico**, y ese es el caso que
 
 ## 6. Casos de caracterización sugeridos
 
-Contexto UAT: órdenes de venta/compra y factura/NC de **compra** están OK; **facturas/NC de venta están bloqueadas por error CAE 100000 y NO deben re-guardarse**. Baseline del original primero, `_REF` aislado con Status=Testing + Audience (metodología §6).
+Contexto UAT: órdenes de venta/compra y factura/NC de **compra** están OK. Baseline del original primero, `_REF` aislado con `Status = Testing`.
+
+> 🔄 **Dos correcciones al contexto de este § (2026-09-10).**
+>
+> 1. **El bloqueo por CAE 100000 ya no aplica.** Tekiio destrabó la emisión: la invoice **15822** generó CAE el 04/09 (`E-Factura Local A-4-15822`, `CAE : 48`, detalle de LOG 3060 con `SIN ERROR`). Las facturas de venta **sí** se pueden re-guardar. Queda como pendiente aparte que el flujo de **resguardos** seguía reportando el middleware sin configurar el 07/09 — son configuraciones distintas, ver [§3.septies](#3septies-unidad-6--trs-a7-paginación-de-las-3-saved-searches-aplicada-2026-09-08).
+> 2. **El aislamiento NO se cierra por audiencia.** Lo que aísla al `_REF` es `Status = Testing`, que ejecuta **solo para el owner del Script record** e ignora la audiencia. Y el 07/09 se comprobó que las audiencias de este script y de `Seteo de Tax Codes` **no son complementarias**: los dos corrieron juntos sobre la transacción 15824, mismo usuario y mismo timestamp. **Verificar el aislamiento por corrida** con el APM acotado a un log, no por configuración.
 
 | # | Flujo UAT | Qué caracteriza | Comparar |
 |---|---|---|---|
 | 1 | Guardar **Orden de Venta** (flujo OK) | Rama salteada + load+save vacío (TRS-A2); sucursal en beforeSubmit | `custbody_l598_sucursal`; que NO se escriba nada más; GU/tiempo vs 1.5s |
-| 2 | Guardar **Orden de Compra** (flujo OK) | Camino completo de líneas del lado compra (purchaseorder no está excluido): tax codes, nombre/UM, indicador, nro comprobante, monto escrito | `custcol_l598_*` línea por línea + `custbody_l598_monto_escrito`, `_tipo_comprobante`, `_nro_comprobante` |
+| 2 | Guardar **Crédito de Proveedor** (`vendorcredit`) | Camino completo de líneas del lado compra: tax codes, nombre/UM, indicador, nro comprobante, monto escrito, y la rama `apply` | `custcol_l598_*` línea por línea + `custbody_l598_monto_escrito`, `_tipo_comprobante`, `_nro_comprobante` |
 | 3 | Guardar **Factura de Compra** (flujo OK) | Gates específicos de `vendorbill` (sin monto escrito / tipo comprobante / nro comprobante, con tax codes) | `custcol_l598_*`; ausencia de los 3 body fields |
 | 4 | Crear y **borrar una NC de Compra de prueba** con retenciones asociadas | Rama DELETE + TRS-A3 | Logs ("Ocurrio un error al borrar…") y persistencia de `customrecord_l598_retencion` |
 | 5 | Monto escrito — bordes con datos de los flujos OK | TRS-A5/A6/C2: total con 1 decimal (p. ej. 10.50), sin decimales, > 1.000.000 | `custbody_l598_monto_escrito` byte a byte |
-| 6 | **Factura/NC de Venta, creditmemo apply, líneas time/itemcost/expcost** (facturables sobre invoice) y **beforeLoad de invoice** | Ramas hoy no ejercitables | ⛔ **Posponer hasta desbloquear CAE 100000 — no re-guardar**; mientras tanto, solo lectura de logs para TRS-A4 |
+| 6 | **Factura/NC de Venta, creditmemo apply, líneas time/itemcost/expcost** (facturables sobre invoice) y **beforeLoad de invoice** | Ramas antes no ejercitables | ✅ **Desbloqueado** por el CAE de la 15822 (ver nota arriba). Para TRS-A4 alcanza con lectura de logs: si el bloque de `beforeLoad` está muerto por el desajuste de mayúsculas, sus `log.debug` internos nunca deberían aparecer |
+
+> ⚠️ **Por qué el caso 2 dejo de ser Orden de Compra (2026-09-10).** Decía `purchaseorder` con el argumento de que ese tipo no está excluido por los guards del código — lo cual es cierto, pero irrelevante: **el original no tiene deployment de `purchaseorder`**. El [inventario de los 12 deployments](../caracterizacion/1-seteo-de-tax-codes.md#plan-de-regresión--6-deployments-restantes-definido-2026-08-05) no lo incluye. Desplegar el `_REF` ahí no sería caracterizar: sería **estrenar el script en un tipo donde nunca corrió**. `vendorcredit` conserva la intención del caso — lado compra, camino completo de líneas, nro de comprobante y monto escrito — y además ejercita la rama `apply`, con un deployment real (`customdeploy11`). Si al crear los deployments apareciera uno de `purchaseorder`, el inventario está desactualizado y el caso original vuelve a ser válido.
 
 ## 7. Dudas abiertas (no verificable desde el repo)
 
