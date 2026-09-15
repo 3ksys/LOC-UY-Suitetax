@@ -2,7 +2,7 @@
 
 ## Mover `L598 - Seteo de Tax Codes` de `afterSubmit` a `beforeSubmit`
 
-**Estado:** ✅ **Aprobada por Tekiio (2026-08-20)** e implementada sobre el `_REF` en su variante **híbrida** (§5, fila 2) — ver [informe de refactor §3.bis](../refactors/1-seteo-de-tax-codes.md#3bis-stc-a1--guarda-híbrida-aplicada-2026-08-20). Pendiente: caracterización en la cuenta.
+**Estado:** ✅ **Aprobada por Tekiio (2026-08-20)** e implementada sobre el `_REF` en su variante **híbrida** (§5, fila 2) — ver [informe de refactor §3.bis](../refactors/1-seteo-de-tax-codes-bitacora.md#3bis-stc-a1--guarda-híbrida-aplicada-2026-08-20). Pendiente: caracterización en la cuenta.
 > Tekiio precisó que hay que **asumir cualquier contexto de creación** (CSV, integraciones, etc.) aunque hoy no se usen. Por eso no se aplicó `beforeSubmit` puro: la guarda híbrida verifica el **dato**, no el contexto, y no requiere enumerar la lista del §3.
 **Riesgo:** 🔴 Alto (fiscal) · **Impacto esperado:** Alto (el mayor ahorro de GU/tiempo medido)
 **Equipo:** Mobeats · **Fecha:** 2026-07-09

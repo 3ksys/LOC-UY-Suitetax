@@ -241,7 +241,7 @@ Los campos custom aparecen en el formulario con las etiquetas **`UY - CÓDIGO DE
 
 ### Caracterización del híbrido STC-A1 — `vendorcredit` 15227 (2026-08-20)
 
-Primera caracterización del `_REF` con la [guarda híbrida](../refactors/1-seteo-de-tax-codes.md#3bis-stc-a1--guarda-híbrida-aplicada-2026-08-20). Se eligió `vendorcredit` **a propósito**: es el único tipo donde el híbrido cambia comportamiento, porque en la rama inline no se ejecuta `desaplicarYAplicarNC` (workaround del segundo save, que en esa rama no existe).
+Primera caracterización del `_REF` con la [guarda híbrida](../refactors/1-seteo-de-tax-codes-bitacora.md#3bis-stc-a1--guarda-híbrida-aplicada-2026-08-20). Se eligió `vendorcredit` **a propósito**: es el único tipo donde el híbrido cambia comportamiento, porque en la rama inline no se ejecuta `desaplicarYAplicarNC` (workaround del segundo save, que en esa rama no existe).
 
 **Transacción:** Bill Credit `URU-00005` (id 15227), par de la Bill 15226. Misma transacción caracterizada el 2026-08-05, así que el baseline ya existía y estaba probado.
 
@@ -324,7 +324,7 @@ Confirmación visual de la línea tras la corrida 2, con el juego completo de co
 
 ### Caracterización STC-A2 — `vendorbill` 15826 (2026-09-07)
 
-Dos corridas sobre la misma transacción. Detalle del marcado y del registro generado en [refactor §3.ter](../refactors/1-seteo-de-tax-codes.md#verificación-en-la-cuenta-2026-09-07).
+Dos corridas sobre la misma transacción. Detalle del marcado y del registro generado en [refactor §3.ter](../refactors/1-seteo-de-tax-codes-bitacora.md#verificación-en-la-cuenta-2026-09-07).
 
 | # | Hora | Versión desplegada | Resultado |
 |:-:|---|---|---|
@@ -343,7 +343,7 @@ Dos corridas sobre la misma transacción. Detalle del marcado y del registro gen
 
 **Costo medido del camino legacy** (mismo APM, un solo guardado): `REF - L598 - Seteo de Tax Codes` = `0,077 s` en `beforeSubmit` + **`14,425 s` en `afterSubmit`**, sobre `30,001 s` de SuiteScript total del guardado. Casi la mitad del tiempo de script es el `load`+`save` legacy — exactamente lo que STC-A1 elimina cuando puede tomar la rama inline.
 
-⚠️ **Por qué esta corrida no tomó inline.** La línea de gasto sin tax code recibe `taxdetailsreference` (`15826_1`) sin que SuiteTax genere su fila en `taxdetails`, y la guarda todo-o-nada deriva al legacy **siempre**. Ver el límite nuevo en [refactor §3.bis](../refactors/1-seteo-de-tax-codes.md#límites-explícitos).
+⚠️ **Por qué esta corrida no tomó inline.** La línea de gasto sin tax code recibe `taxdetailsreference` (`15826_1`) sin que SuiteTax genere su fila en `taxdetails`, y la guarda todo-o-nada deriva al legacy **siempre**. Ver el límite nuevo en [refactor §3.bis](../refactors/1-seteo-de-tax-codes-bitacora.md#límites-explícitos).
 
 **Alcance NO cubierto — dicho antes de que alguien lo lea como cubierto:** la rama `expense` no quedó caracterizada **en escritura**. SuiteTax no creó fila de `taxdetails` para la línea de gasto, así que el script la recorre y no resuelve nada (mismo comportamiento que el original, que emite el mismo `log.error`). Para caracterizar `expense` hace falta una Bill con **tax code en la línea de gasto**, cargado como fila `LINE TYPE = Expense` en la solapa `Tax Details`: el campo **no existe** en la fila de la sublista, que solo expone `TAX AMOUNT` y `GROSS AMT` calculados.
 
