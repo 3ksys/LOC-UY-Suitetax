@@ -6,7 +6,7 @@
 **Toca impuestos:** sin marca 💰 en el ranking — pero el campo que escribe alimenta una **validación fiscal DGI** (umbral 5000 UI para e-Tickets), relevancia indirecta alta
 **Tiempo medido:** 0.8s ×1 en Orden de Venta · 0.7s en Ejecución Artículo/Remito · 0.2s en Resguardo ([flujos](../flujos-prueba-y-plan-ejecucion.md#3-mapeo-operación--scripts--tiempo-real-baseline-medido))
 
-Análisis pre-refactor (fase 1 de la [metodología](../metodologia-refactor.md)). Cobertura: total (156/156 líneas) + dependencias del `define`.
+**Fase:** REFACTOR — **C1-C4 y D1-D5 aplicados el 2026-09-15** en `L598 - Setear Unidad Indexada_REF.js` (ver [§3.bis](#3bis-unidades-aplicadas-2026-09-15)). El original **nunca** se modifica. Análisis con cobertura total (156/156 líneas) + dependencias del `define`. **Pendiente: deploy aislado y caracterización.**
 
 ---
 
@@ -77,16 +77,53 @@ El hallazgo de mayor valor no es de performance: este script es **el único escr
 | #2 | SUI-B1 | Config FE + config UI: SuiteQL `SELECT` específico o `N/cache` (hoy 2 SS completas por guardado) — **requiere aprobación previa por reemplazo de mecanismo** | 🔴 | ⏳ Propuesto |
 | #2 | SUI-B2 | Cachear/memorizar `l598esOneworld` (vía `utilities_REF`, coordinado con el resto de consumidores) | 🟡 | ⏳ Propuesto |
 | #3 | SUI-B3 | Nota de dependencia: página `getRange` extra en `searchSavedPro` (se documenta, no se toca en este script) | 🟢 | ⏳ Propuesto |
-| #4 | SUI-C1 | `var` → `const/let` (unificando las declaraciones dobles de `subsidiaria`/`rate`) | 🟢 | ⏳ Propuesto |
-| #4 | SUI-C2 | Quitar el 2º argumento de `parseFloat(rate, 10)` | 🟢 | ⏳ Propuesto |
-| #4 | SUI-C3 | Eliminar `'N/error'` del `define` | 🟢 | ⏳ Propuesto |
-| #4 | SUI-C4 | `==` → `===` en línea 21; línea 112 con normalización `String()` (no a ciegas) | 🟡 | ⏳ Propuesto |
-| #5 | SUI-D1 | Eliminar logs con "LINE 44"/"LINE 55" desincronizados | 🟢 | ⏳ Propuesto |
-| #5 | SUI-D2 | Limpieza de `log.debug`/`log.audit` de dump (conservar `log.error`) | 🟢 | ⏳ Propuesto |
-| #5 | SUI-D3 | Simplificar chequeos redundantes de resultado (100/107, 133/140) | 🟢 | ⏳ Propuesto |
-| #5 | SUI-D4 | Simplificar el boolean re-chequeado de línea 41 | 🟢 | ⏳ Propuesto |
-| #6 | SUI-D5 | Helper único de desempaquetado de `searchSavedPro` para ambas funciones de config | 🟡 | ⏳ Propuesto |
+| #4 | SUI-C1 | `var` → `const/let` (unificando las declaraciones dobles de `subsidiaria`/`rate`) | 🟢 | 🔧 Aplicado |
+| #4 | SUI-C2 | Quitar el 2º argumento de `parseFloat(rate, 10)` | 🟢 | 🔧 Aplicado |
+| #4 | SUI-C3 | Eliminar `'N/error'` del `define` | 🟢 | 🔧 Aplicado |
+| #4 | SUI-C4 | `==` → `===` en línea 21; línea 112 con normalización `String()` (no a ciegas) | 🟡 | 🔧 Aplicado |
+| #5 | SUI-D1 | Eliminar logs con "LINE 44"/"LINE 55" desincronizados | 🟢 | 🔧 Aplicado |
+| #5 | SUI-D2 | Limpieza de `log.debug`/`log.audit` de dump (conservar `log.error`) | 🟢 | 🔧 Aplicado |
+| #5 | SUI-D3 | Simplificar chequeos redundantes de resultado (100/107, 133/140) | 🟢 | 🔧 Aplicado |
+| #5 | SUI-D4 | Simplificar el boolean re-chequeado de línea 41 | 🟢 | 🔧 Aplicado |
+| #6 | SUI-D5 | Helper único de desempaquetado de `searchSavedPro` para ambas funciones de config | 🟡 | 🔧 Aplicado |
 | #6 | SUI-D6 | Referenciar la columna de la SS por nombre en lugar de `columns[2]` (bloqueado por duda abierta #3) | 🟡 | ⏳ Propuesto |
+
+## 3.bis Unidades aplicadas (2026-09-15)
+
+**Archivo:** `LOC UY/L598 - Setear Unidad Indexada_REF.js` · 155 → 123 líneas de código (más 45 de header documental) · `node --check` ✔ · el original no se tocó.
+
+Entraron los 9 cambios que no dependen de Tekiio: **C1-C4** y **D1-D5**. Quedan afuera y con motivo: **B1** (🔴, reemplazo de mecanismo), **B2** (va por `utilities_REF`, coordinado con el resto de consumidores de `l598esOneworld`), **B3** (nota de dependencia, nada que aplicar) y **D6** (bloqueado por la duda abierta #3: hay que conocer la definición de las 2 SS para nombrar la columna).
+
+### Unidad 1 — C + D mecánicos
+
+| ID | Qué se hizo | Argumento de equivalencia |
+|---|---|---|
+| SUI-C1 | `var` → `const`/`let`. `subsidiaria` y `rate` pasan a **una** declaración `let` antes de su `if/else` | El original declaraba cada una dos veces y funcionaba por hoisting; con una sola declaración el valor asignado en cada rama es el mismo |
+| SUI-C2 | `parseFloat(rate, 10)` → `parseFloat(rate)` | `parseFloat` tiene un solo parámetro; el `10` se descartaba |
+| SUI-C3 | Quitado `'N/error'` y su parámetro `error` del `define` | Cero referencias en el archivo (verificado con grep antes y después) |
+| SUI-C4 | `scriptContext.type == 'create'` → `===` · `tipoIntegracionFE == parametro` → `String(a) === String(b)` | El primero compara strings literales. El segundo **no** se migró a ciegas: el valor de la SS es string y el parámetro del deployment podría ser numérico; `String()` en ambos lados conserva la igualdad `"3" == 3`. Mismo criterio y mismo riesgo residual que STC-B1 (cerrado ✅ en su caracterización) |
+| SUI-D1 | Eliminados los `log.debug("LINE 44…")` / `("LINE 55…")` | Estaban en las líneas 46 y 57: diagnóstico engañoso. Subsumido por D2 |
+| SUI-D2 | Eliminados `log.audit` INICIO/FIN, los 2 logs de governance remaining y 5 `log.debug` de contexto. **Los 3 `log.error` se conservan** | Ninguno alimenta datos; el `finally` que solo contenía logs desaparece con ellos. `currScript` se conserva porque `getParameter` lo necesita |
+| SUI-D3 | Quitado el segundo `if (!isEmpty(resultSet) && length > 0)` en las dos funciones de config | Se evaluaba sobre el **mismo array** que la condición externa acababa de validar; nunca era falso. La guarda `!respuesta.error` sigue **primero**, porque en el camino de error `searchSavedPro` no define `objRsponseFunction` (verificado en `L598 - Utilities.js:176-248`) |
+| SUI-D4 | `!isEmpty(x) && x` → `if (x)` | `getConfigFE` retorna siempre un boolean (`false` inicial, `true`, o `false` en el catch) |
+
+### Unidad 2 — SUI-D5: helper de desempaquetado
+
+`getConfigFE` y `getConfigUnidadIndexada` repetían el mismo bloque: `searchSavedPro` → chequear error y vacío → `result[0].getValue(columns[2])`. Ahora ambas llaman a `leerPrimeraFila(idSS, filtros, indiceColumna, nombreLog)`.
+
+**El detalle que importa:** el helper devuelve `undefined` cuando no hay fila o hubo excepción, en vez de `''`. No es cosmético. El original, sin filas, **no comparaba nada** y `getConfigFE` devolvía `false`; si el helper devolviera `''` y el parámetro del deployment fuera `''`, `String('') === String('')` daría `true` y el script tomaría la rama TAFACE por un caso que antes no existía. Con `undefined` como sentinela, `getConfigFE` compara solo si hubo fila, y `getConfigUnidadIndexada` traduce `undefined` → `''` para devolver exactamente lo que devolvía. `getValue` nunca devuelve `undefined` (string, boolean o null), así que el sentinela no colisiona con ningún valor legítimo.
+
+Los títulos de los `log.error` (`'consultaConfigFE'`, `'getConfigUnidadIndexada'`) se pasan por parámetro y los mensajes quedan byte a byte iguales.
+
+### Riesgo residual declarado
+
+Dos comparaciones cambiaron de `==` a `===` con normalización `String()`. Equivalente para los tipos reales del dominio (string de SS vs string/number de parámetro). El único caso divergente teórico es `null == undefined` (loose `true`, estricto `false`), que no puede ocurrir: `getParameter` devuelve `null` cuando no está seteado, no `undefined`, y `getValue` tampoco devuelve `undefined`. La caracterización byte a byte lo cierra igual, como se hizo en STC.
+
+### Pendiente
+
+- [ ] Deploy aislado del `_REF` (Status `Testing`, Audience rol de pruebas) — necesita el inventario de deployments del original (duda abierta #1).
+- [ ] Caracterización: Orden de Venta (caso baseline, 0.8s) en las dos ramas — con config TAFACE y sin ella — comparando `custbody_l598_valor_unidad_indexada` original vs `_REF`.
+- [ ] Medición GU: se espera **sin cambio** en esta unidad (las 2 SS y `l598esOneworld` siguen ejecutándose; el ahorro real está en B1/B2, que están bloqueados).
 
 ## 4. Recomendaciones Grupo A — relación con UAT-12
 
