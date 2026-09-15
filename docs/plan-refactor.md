@@ -82,18 +82,21 @@ F0 Setup & Bloqueantes → F1 Análisis & Priorización → F2 PILOTO → F3 Esc
 
 ## 8. Estado actual y próximos pasos
 
-**Hoy tenemos:** cuenta dev habilitada, refactor del piloto escrito y syntax-verificado, informe del piloto y este plan.
+*Actualizado 2026-09-15. La versión anterior de esta sección describía solo el piloto.*
 
-**Desbloqueado con la cuenta (no requiere baseline de Tekiio):**
-1. Deploy aislado del `_REF` (Status=Testing) del piloto.
-2. Ejecutar original vs `_REF` con el mismo período → **caracterización byte-a-byte** (`cmp`).
-3. Medir GU/tiempo propios de ambas versiones.
+**Hoy tenemos:** cuenta dev habilitada · piloto `Generación TXT` refactorizado · **los 6 scripts críticos con `_REF`** (originales intactos): `Seteo de Tax Codes` (B/C/D + STC-A1 + STC-A2, caracterizado 30 GU → 0), `Transacción (Servidor)` (6 unidades), y la ola del 2026-09-15 sobre `Calcular Retenciones`, `Asignar Rubro IVA`, `Conexion Directa FE` y `Setear Unidad Indexada` (46 cambios B/C/D completos + 2 parciales, cada uno con argumento de equivalencia y verificación medida en su bitácora) · [registro de aprobaciones](registro-aprobaciones.md) con **56 filas** cubriendo los 6 scripts.
 
-**Requiere el baseline de Tekiio (pendiente):**
-- Elegir períodos/volúmenes representativos.
-- Comparar contra la medición de referencia del cliente.
+**Desbloqueado (no requiere a Tekiio):**
+1. Decidir si creamos `utilities_REF`: destraba CDF-B7, SUI-B2 y una memo compartida de `l598esOneworld` que hoy cada script resuelve por su cuenta. `Utilities.js` lo consumen muchos más scripts que estos seis.
+2. Revisar con el código en mano CRT-B4 (`save()` → `submitFields`), excluido por semántica de sourcing/validación.
 
-**Decisión abierta con Tekiio:** corrección de bugs del Grupo A (A1/A2/A3) en cambio separado.
+**Requiere a Tekiio (pendiente):**
+- **Inventario de deployments** de los 5 scripts restantes → sin él no hay deploy `Testing` ni caracterización de los 4 `_REF` nuevos.
+- **TRS-D1** (dueño único de las columnas de tax codes): bloquea TRS-A1, aprobado desde el 2026-09-08.
+- Definiciones de la cuenta que destraban 6 cambios ya analizados (tipos de campo de `beforeLoad` de CDF, columnas de las SS de ARI y SUI, registros de config por subsidiaria): [resumen §4 #12](resumen-analisis-scripts-criticos.md#4-decisiones-y-entregas-que-necesitamos-de-tekiio).
+- Los 42 hallazgos del Grupo A y las 5 migraciones SS → SuiteQL: ahí está la ganancia grande que B/C/D no captura.
+
+**Decisión abierta con Tekiio:** corrección de bugs del Grupo A en cambios separados, uno por uno, con su fila aprobada en el registro.
 
 ## 9. Descubrimientos clave
 

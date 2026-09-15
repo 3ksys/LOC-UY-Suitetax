@@ -20,11 +20,11 @@ Cada informe se lee solo. Lo ya aplicado vive en una **bitácora** aparte, para 
   - [Bitácora — unidades 5-6](refactors/2-transaccion-servidor-bitacora-unidades-5-6.md) — TRS-A2 y TRS-A7, Grupo A aprobado el 2026-09-08.
 - [3 — Calcular Retenciones (SS)V2](refactors/3-calcular-retenciones-ss.md) — análisis + **15 cambios B/C/D aplicados** sobre el `_REF`.
   - [Bitácora de aplicación](refactors/3-calcular-retenciones-ss-bitacora.md) — argumento de equivalencia por ID, verificación medida, 9 sub-funciones extraídas.
-- [4 — Asignar Rubro IVA](refactors/4-asignar-rubro-iva.md) — análisis.
+- [4 — Asignar Rubro IVA](refactors/4-asignar-rubro-iva.md) — análisis + **12 cambios B/C/D aplicados** sobre el `_REF` (§3.bis inline). ARI-B3 reclasificado a Grupo A.
 - [5 — Conexion Directa FE (SS)](refactors/5-conexion-directa-fe-ss.md) — análisis + **10 cambios B/C/D aplicados y 2 parciales** sobre el `_REF`.
   - [Bitácora de aplicación](refactors/5-conexion-directa-fe-ss-bitacora.md) — verificación medida, D3 variable por variable, C1 parcial con motivo, fusión de `referenciaGlobal`.
   - [Anexo — flujo del tipo de CFE](refactors/5-conexion-directa-fe-ss-anexo-tipo-cfe.md) — evidencia para el error 100000.
-- [6 — Setear Unidad Indexada](refactors/6-setear-unidad-indexada.md) — análisis + causa raíz probable de UAT-12.
+- [6 — Setear Unidad Indexada](refactors/6-setear-unidad-indexada.md) — análisis + causa raíz probable de UAT-12 + **9 cambios B/C/D aplicados** sobre el `_REF` (§3.bis inline).
 
 ### Propuestas de cambio (Grupo A — requieren aprobación de Tekiio)
 - [STC-A1 — Entry point de Seteo de Tax Codes](propuestas/STC-A1-entrypoint-seteo-tax-codes.md) — ✅ aprobada 2026-08-20, aplicada en variante híbrida.

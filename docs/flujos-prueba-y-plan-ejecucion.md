@@ -147,6 +147,8 @@ Cada script sigue el flujo del piloto: análisis verificado → Plan de Cambios 
 
 > Todos tocan impuestos → **caracterización byte-a-byte estricta** + los cambios de comportamiento van al **registro de aprobaciones**. Los quick wins no-fiscales de la [priorización calibrada](priorizacion-scripts.md) (ola 1) sirven para **aceitar el proceso** en paralelo, con menor riesgo.
 
+**Estado (2026-09-15):** los 5 de la tabla más `Setear Unidad Indexada` ya tienen `_REF` con el B/C/D aplicado. La ola de los scripts 3 a 6 se ejecutó del más chico al más grande (6 → 4 → 3 → 5) para calibrar el procedimiento antes de los dos grandes. Lo que sigue es la Fase C para los seis, bloqueada por el inventario de deployments. Detalle por script en los informes y bitácoras de [`docs/refactors/`](README.md#informes-por-script-análisis-y-refactor).
+
 ### Fase C — Caracterización y medición (con los flujos UAT)
 - Por cada script refactorizado: ejecutar las **operaciones del flujo UAT** donde aparece (Guardar Orden/Factura/etc.) con el rol de pruebas, y comparar **tiempo/GU y output** contra el baseline de `Mobeats Análisis`.
 - Los casos UAT de Tekiio son los **escenarios de prueba oficiales** → se usan como casos de caracterización.

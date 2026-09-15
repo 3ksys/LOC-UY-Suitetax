@@ -78,7 +78,7 @@ Registro central del proyecto. Toda modificación clasificada como **Alto riesgo
 
 El estado avanza ⏳ → ✅/❌ sólo con confirmación de Tekiio. Recién en `✅ Aprobado` el cambio puede planificarse; al aplicarse pasa a `🔧 Aplicado`.
 
-**Cobertura del registro (2026-09-15):** están registrados los 6 scripts priorizados más `Generación TXT Localizaciones (Sched)`. Los IDs de `Calcular Retenciones (SS)V2`, `Asignar Rubro IVA`, `Conexion Directa FE (SS)` y `Setear Unidad Indexada` se incorporaron en bloque desde sus informes de refactor: la fecha de solicitud es la de creación de cada informe (2026-08-20), y todos entran en ⏳ Pendiente porque ninguno se presentó formalmente todavía.
+**Cobertura del registro (2026-09-15):** están registrados los 6 scripts priorizados más `Generación TXT Localizaciones (Sched)`. Los IDs de `Calcular Retenciones (SS)V2`, `Asignar Rubro IVA`, `Conexion Directa FE (SS)` y `Setear Unidad Indexada` se incorporaron en bloque desde sus informes de refactor: la fecha de solicitud es la de creación de cada informe (2026-08-20) — salvo **ARI-B3** y **CDF-D5**, reclasificados de B/D a corrección al aplicar el refactor (2026-09-15) —, y todos entran en ⏳ Pendiente porque ninguno se presentó formalmente todavía.
 
 **Decisiones que conviene agrupar, no pedir sueltas:**
 
