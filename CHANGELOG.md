@@ -23,6 +23,7 @@ Leyenda de grupos de hallazgos: **A** correctitud · **B** governance/performanc
 - **Refactor** `L598 - Setear Unidad Indexada_REF.js` — C+D (9 cambios, comportamiento preservado). B1 🔴 y D6 quedan bloqueados por Tekiio; B2 espera `utilities_REF`. Ver [informe §3.bis](docs/refactors/6-setear-unidad-indexada.md#3bis-unidades-aplicadas-2026-09-15).
 - **Refactor** `L598 - Asignar Rubro IVA_REF.js` — B+C+D (12 cambios, comportamiento preservado). ARI-B3 reclasificado a Grupo A; B4 🔴; B5 bloqueado por la definición de las SS. Ver [informe §3.bis](docs/refactors/4-asignar-rubro-iva.md#3bis-unidades-aplicadas-2026-09-15).
 - **Refactor** `L598 - Calcular Retenciones (SS)V2_REF.js` — B+C+D (15 cambios, comportamiento preservado; los 4 bloques de posteo fiscal solo reciben cambios mecánicos). B1 y D1 🔴; B4 excluido; B5 parcial. Ver [bitácora](docs/refactors/3-calcular-retenciones-ss-bitacora.md).
+- **Refactor** `L598 - Conexion Directa FE (SS)_REF.js` — B+C+D (10 completos + C1/D3 parciales, comportamiento preservado). 4362 → 4048 líneas: 4 funciones muertas y bloques comentados fuera. B1, B5, D1 🔴; B2 excluido (tipos de campo); D5 reclasificado a corrección; B7 espera `utilities_REF`. Ver [bitácora](docs/refactors/5-conexion-directa-fe-ss-bitacora.md).
 
 ### Cambiado (refactor — comportamiento preservado)
 - **Generación TXT Localizaciones (Sched):**

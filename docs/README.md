@@ -21,7 +21,8 @@ Cada informe se lee solo. Lo ya aplicado vive en una **bitácora** aparte, para 
 - [3 — Calcular Retenciones (SS)V2](refactors/3-calcular-retenciones-ss.md) — análisis + **15 cambios B/C/D aplicados** sobre el `_REF`.
   - [Bitácora de aplicación](refactors/3-calcular-retenciones-ss-bitacora.md) — argumento de equivalencia por ID, verificación medida, 9 sub-funciones extraídas.
 - [4 — Asignar Rubro IVA](refactors/4-asignar-rubro-iva.md) — análisis.
-- [5 — Conexion Directa FE (SS)](refactors/5-conexion-directa-fe-ss.md) — análisis.
+- [5 — Conexion Directa FE (SS)](refactors/5-conexion-directa-fe-ss.md) — análisis + **10 cambios B/C/D aplicados y 2 parciales** sobre el `_REF`.
+  - [Bitácora de aplicación](refactors/5-conexion-directa-fe-ss-bitacora.md) — verificación medida, D3 variable por variable, C1 parcial con motivo, fusión de `referenciaGlobal`.
   - [Anexo — flujo del tipo de CFE](refactors/5-conexion-directa-fe-ss-anexo-tipo-cfe.md) — evidencia para el error 100000.
 - [6 — Setear Unidad Indexada](refactors/6-setear-unidad-indexada.md) — análisis + causa raíz probable de UAT-12.
 

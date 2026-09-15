@@ -3,7 +3,7 @@
 **Script:** `L598 - Conexion Directa FE (SS)` · **Archivo:** `LOC UY/L598 - Conexion Directa FE (SS).js` · **LOC:** 4.362 (verificado con `wc -l`)
 **Tipo:** UserEvent 2.1 (`beforeLoad` + `afterSubmit`, retornados en líneas 4360-4361 → **×2** verificado) · **Módulo:** Facturación Electrónica (CFE) · **Toca impuestos:** sí 💰 + FE
 **Tiempo medido (baseline):** Remito **21.6s ×2** (pico del proyecto) · NC Venta 12.0s · Factura Venta 11.6s · Resguardo 1.8s
-**Estado:** análisis PRE-refactor. Ningún archivo modificado. Todas las referencias `NNNN` son líneas del archivo del script salvo indicación contraria.
+**Fase:** REFACTOR — **B3, B4, B6, C3-C5, D2, D4, D6/D7 aplicados y C1/D3 parciales el 2026-09-15** en `L598 - Conexion Directa FE (SS)_REF.js` (ver [bitácora](5-conexion-directa-fe-ss-bitacora.md)). El original **nunca** se modifica. Referencias `NNNN` = líneas del original. **Pendiente: deploy aislado y caracterización.**
 
 ---
 
@@ -109,23 +109,24 @@ Anatomía del costo del `afterSubmit` (explica los 11-21s medidos): `record.load
 | Criterio | ID | Qué se modifica | Riesgo | Estado |
 |---|---|---|:--:|:--:|
 | #2 Governance | CDF-B1 | Migrar `customsearch_l598_trans_gen_cae_con_dire` (89 col. posicionales) a SuiteQL/Workbook — **propuesta dedicada**, prioridad v2 del cliente | 🔴 | ⏳ Propuesto |
-| #2 Governance | CDF-B2 | `beforeLoad`: reemplazar `record.load` completo por el `lookupFields` que ya existe en `getConfigurationFE` (una sola consulta) | 🟡 | ⏳ Propuesto |
-| #2 Governance | CDF-B3 | Memoizar `l598esOneworld()` por ejecución (hoy 2-3 búsquedas idénticas por evento) | 🟢 | ⏳ Propuesto |
-| #2 Governance | CDF-B4 | Cachear timezone en `parseDate` (elimina `config.load` por cada log FE) + quitar cálculo muerto `companyDateTime2` | 🟢 | ⏳ Propuesto |
-| #2 Governance | CDF-B7 | `utilities_REF`: `armarArreglosSS` bajo demanda en `searchSavedPro` | 🟡 | ⏳ Propuesto |
-| #3 Performance | CDF-B6 | Quitar `log.debug` por línea del loop y `JSON.stringify` de objetos grandes (conservar `log.error`) | 🟢 | ⏳ Propuesto |
-| #4 Patrones | CDF-C4 | Eliminar `N/error` del `define`; `N/transaction` cae con CDF-D2 | 🟢 | ⏳ Propuesto |
-| #4 Patrones | CDF-C3 | `toFixedOK`: de prototype a función de módulo, fórmula intacta | 🟡 | ⏳ Propuesto |
-| #4 Patrones | CDF-C5 | Limpiar `parseFloat(x,10)`/`parseInt(10,10)` (radix inerte) | 🟢 | ⏳ Propuesto |
-| #5 Legibilidad | CDF-C1 | `var` → `const`/`let` con alcance de bloque | 🟢 | ⏳ Propuesto |
-| #5 Legibilidad | CDF-D3 | Declarar los ≥12 global leaks (sin cambiar la semántica de CDF-A5) | 🟡 | ⏳ Propuesto |
-| #5 Legibilidad | CDF-D4 | Quitar el filtro duplicado (252-268) | 🟢 | ⏳ Propuesto |
-| #5 Legibilidad | CDF-D5 | `codigoPercEncontrado =` (asignación) — byte-idéntico, documentado en el informe del refactor | 🟢 | ⏳ Propuesto |
-| #5 Legibilidad | CDF-D6/D7 | Corregir/retirar marcadores `LINE NNN` y cosmética | 🟢 | ⏳ Propuesto |
-| #6 Reutilización | CDF-D2 | Eliminar funciones muertas (4120-4284), `padding_left` duplicada y bloques comentados con restos 1.0 (CDF-C2) | 🟢 | ⏳ Propuesto |
+| #2 Governance | CDF-B2 | `beforeLoad`: reemplazar `record.load` completo por el `lookupFields` que ya existe en `getConfigurationFE` (una sola consulta) | 🟡 | ⏳ Excluido (tipos de campo a confirmar; ver bitácora) |
+| #2 Governance | CDF-B3 | Memoizar `l598esOneworld()` por ejecución (hoy 2-3 búsquedas idénticas por evento) | 🟢 | 🔧 Aplicado |
+| #2 Governance | CDF-B4 | Cachear timezone en `parseDate` (elimina `config.load` por cada log FE) + quitar cálculo muerto `companyDateTime2` | 🟢 | 🔧 Aplicado |
+| #2 Governance | CDF-B7 | `utilities_REF`: `armarArreglosSS` bajo demanda en `searchSavedPro` | 🟡 | ⏳ Requiere `utilities_REF` |
+| #3 Performance | CDF-B6 | Quitar `log.debug` por línea del loop y `JSON.stringify` de objetos grandes (conservar `log.error`) | 🟢 | 🔧 Aplicado |
+| #4 Patrones | CDF-C4 | Eliminar `N/error` del `define`; `N/transaction` cae con CDF-D2 | 🟢 | 🔧 Aplicado |
+| #4 Patrones | CDF-C3 | `toFixedOK`: de prototype a función de módulo, fórmula intacta | 🟡 | 🔧 Aplicado |
+| #4 Patrones | CDF-C5 | Limpiar `parseFloat(x,10)`/`parseInt(10,10)` (radix inerte) | 🟢 | 🔧 Aplicado |
+| #5 Legibilidad | CDF-C1 | `var` → `const`/`let` con alcance de bloque | 🟢 | 🔧 Parcial (267/397; ver bitácora) |
+| #5 Legibilidad | CDF-D3 | Declarar los ≥12 global leaks (sin cambiar la semántica de CDF-A5) | 🟡 | 🔧 Parcial (11/12; ver bitácora) |
+| #5 Legibilidad | CDF-D4 | Quitar el filtro duplicado (252-268) | 🟢 | 🔧 Aplicado |
+| #5 Legibilidad | CDF-D5 | `codigoPercEncontrado =` (asignación) — byte-idéntico, documentado en el informe del refactor | 🟢 | ⏳ Reclasificado → corrección ([registro](../registro-aprobaciones.md)) |
+| #5 Legibilidad | CDF-D6/D7 | Corregir/retirar marcadores `LINE NNN` y cosmética | 🟢 | 🔧 Aplicado |
+| #6 Reutilización | CDF-D2 | Eliminar funciones muertas (4120-4284), `padding_left` duplicada y bloques comentados con restos 1.0 (CDF-C2) | 🟢 | 🔧 Aplicado |
 | #6 Reutilización | CDF-D1 | División de `buscarInformacionFE` — **iniciativa dedicada**, no entra en esta ola | 🔴 | 💡 Candidato |
 
 **Matriz de riesgo:** 🟢 ×9 (sin aprobación) · 🟡 ×5 (revisión conjunta) · 🔴 ×3 (CDF-B1, CDF-B5, CDF-D1 — requieren aprobación explícita y no se aplican en este refactor).
+**Aplicado (2026-09-15):** detalle por ID, verificación medida y exclusiones en la [bitácora de aplicación](5-conexion-directa-fe-ss-bitacora.md).
 
 ---
 
