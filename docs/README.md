@@ -11,11 +11,17 @@ Localización fiscal Uruguay para NetSuite (SuiteTax). Proyecto de refactor de S
 
 ### Informes por script (análisis y refactor)
 - [Resumen ejecutivo — 6 scripts críticos](resumen-analisis-scripts-criticos.md) — estado, patrones sistémicos y pedidos a Tekiio. **El documento para compartir.**
+Cada informe se lee solo. Lo ya aplicado vive en una **bitácora** aparte, para que el informe no crezca sin límite: ningún documento pasa de 200 líneas.
+
 - [1 — Seteo de Tax Codes](refactors/1-seteo-de-tax-codes.md) — `_REF` aplicado **con STC-A1 (guarda híbrida)**. Caracterizado en `vendorcredit`: **30 GU → 0**, output idéntico.
-- [2 — Transacción (Servidor)](refactors/2-transaccion-servidor.md) — análisis.
+  - [Bitácora de aplicación](refactors/1-seteo-de-tax-codes-bitacora.md) — STC-A1 y STC-A2: qué se aplicó, verificación en la cuenta y límites declarados.
+- [2 — Transacción (Servidor)](refactors/2-transaccion-servidor.md) — análisis + **6 unidades aplicadas** sobre el `_REF`.
+  - [Bitácora — unidades 1-4](refactors/2-transaccion-servidor-bitacora-unidades-1-4.md) — refactor B/C/D del 2026-08-20 y los tres bugs que atrapó el chequeo de alcance.
+  - [Bitácora — unidades 5-6](refactors/2-transaccion-servidor-bitacora-unidades-5-6.md) — TRS-A2 y TRS-A7, Grupo A aprobado el 2026-09-08.
 - [3 — Calcular Retenciones (SS)V2](refactors/3-calcular-retenciones-ss.md) — análisis.
 - [4 — Asignar Rubro IVA](refactors/4-asignar-rubro-iva.md) — análisis.
-- [5 — Conexion Directa FE (SS)](refactors/5-conexion-directa-fe-ss.md) — análisis + anexo del flujo de tipo de CFE (error 100000).
+- [5 — Conexion Directa FE (SS)](refactors/5-conexion-directa-fe-ss.md) — análisis.
+  - [Anexo — flujo del tipo de CFE](refactors/5-conexion-directa-fe-ss-anexo-tipo-cfe.md) — evidencia para el error 100000.
 - [6 — Setear Unidad Indexada](refactors/6-setear-unidad-indexada.md) — análisis + causa raíz probable de UAT-12.
 
 ### Propuestas de cambio (Grupo A — requieren aprobación de Tekiio)

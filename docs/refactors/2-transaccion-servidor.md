@@ -4,7 +4,7 @@
 **Tipo:** UserEvent con **3 entry points declarados** (`beforeLoad`, `beforeSubmit`, `afterSubmit` — return{} en L2123-2127; el ×3 del informe de performance corresponde a estos 3 entry points, no a re-triggers) · **Módulo:** FE-CAE · **Toca impuestos:** sí 💰
 **Tiempo medido (baseline real, ×3):** Remito 9.6s · NC Venta 6.6s · Factura Compra 4.8s · Factura Venta 4.1s · Orden Venta 1.5s. Presente en casi todas las transacciones.
 > ⚠️ **Corrección de lectura (2026-08-05):** estas cifras son **sumas acumuladas sobre 4-7 guardados** del Excel APM de Tekiio (verificado: Remito 9,62 = 9,18+0,38+0,06 sobre 6 guardados; NC 6,62 sobre 4; F.Venta 4,09 sobre 7; OV 1,55 sobre 6). Por guardado: NC ≈ 1,7s · Remito ≈ 1,6s · F.Venta ≈ 0,6s · OV ≈ 0,26s. El orden relativo de prioridad cambia con la normalización (NC y Remito pesan más por guardado que F.Venta). Ver [medición APM](../medicion-apm.md).
-**Fase:** REFACTOR — **las 4 unidades aplicadas** el 2026-08-20 en `L598 -Transacción (Servidor)_REF.js`. El original **nunca** se modifica. Ver [§3.bis](#3bis-unidad-1--c--d-mecanicos-aplicada-2026-08-20), [§3.ter](#3ter-unidad-2--b-performance-aplicada-2026-08-20) [§3.quater](#3quater-unidad-3--trs-d4-division-en-funciones-aplicada-2026-08-20) y [§3.quinquies](#3quinquies-unidad-4--lo-que-se-destrabo-verificando-aplicada-2026-08-20). **Pendiente: caracterización byte a byte de las 4 unidades juntas.**
+**Fase:** REFACTOR — **6 unidades aplicadas** sobre `L598 -Transacción (Servidor)_REF.js`: las 4 del refactor B/C/D el 2026-08-20 ([bitácora](2-transaccion-servidor-bitacora-unidades-1-4.md)) y las 2 del Grupo A aprobado el 2026-09-08 ([bitácora](2-transaccion-servidor-bitacora-unidades-5-6.md)). El original **nunca** se modifica. **Pendiente: caracterización byte a byte de las 4 primeras unidades juntas**, más la de TRS-A2 y TRS-A7.
 
 > **Análisis previo:** este script **SÍ tiene** sección en [priorizacion-scripts.md](../priorizacion-scripts.md) (líneas 225-233, ola 3, score 9 — el #1 de la matriz). Los 8 hallazgos previos se re-verificaron línea por línea y se confirmaron todos; este informe los absorbe (con su ID TRS-) y agrega hallazgos nuevos no relevados antes: TRS-A3, TRS-A4, TRS-A6, TRS-B3/B4/B5, TRS-C1/C3/C4 y todo el Grupo D.
 
@@ -34,12 +34,12 @@ UserEvent "ómnibus" de la localización Uruguay que corre sobre casi todas las 
 | ID | Hallazgo | Evidencia | Riesgo |
 |---|---|---|:--:|
 | TRS-A1 | Patrón `afterSubmit` + `record.load()` + `save()` para setear campos calculados — el mismo patrón de STC-A1, medido allí en **30 GU por guardado**. ❌ La cláusula "el save además re-dispara los UserEvents del registro" está **descartada** (2026-09-08, ver §7.4): dos observaciones independientes — el diagnóstico en `vendorcredit` 15227 y `Seteo de Tax Codes` en la invoice 15822 — muestran que el `save()` de un UserEvent no re-dispara los UserEvents de otros scripts. **El ahorro de load+save no depende de esa cláusula y se sostiene solo; la cláusula no se cita más como beneficio.** | load L1208, save L1915-1918 | 🔴 |
-| TRS-A2 ✅🔧 | **Aprobado por Tekiio 2026-09-08 y aplicado — ver [§3.sexies](#3sexies-unidad-5--trs-a2-early-return-aplicada-2026-09-08).** Para `salesorder`/`transferorder` **toda** la lógica se saltea (L1212, L1864, L1892) pero el load+save se ejecuta igual: se re-guarda un registro sin ningún cambio en cada submit. Explica gran parte del baseline de Orden de Venta (1.5s). | L1207-1212, L1915 | 🔴 |
+| TRS-A2 ✅🔧 | **Aprobado por Tekiio 2026-09-08 y aplicado — ver [§3.sexies](2-transaccion-servidor-bitacora-unidades-5-6.md#3sexies-unidad-5--trs-a2-early-return-aplicada-2026-09-08).** Para `salesorder`/`transferorder` **toda** la lógica se saltea (L1212, L1864, L1892) pero el load+save se ejecuta igual: se re-guarda un registro sin ningún cambio en cada submit. Explica gran parte del baseline de Orden de Venta (1.5s). | L1207-1212, L1915 | 🔴 |
 | TRS-A3 | **(nuevo)** En beforeSubmit DELETE se llama `objRecord.delete({type, id})` sobre el objeto Record; el objeto Record **no tiene método `delete`** en N/record (la función es del módulo: `record.delete`). El TypeError cae en el catch que solo loguea → las retenciones asociadas (`customrecord_l598_retencion`, `customrecord_l598_retencion_nc`) muy probablemente **nunca se borran** y quedan huérfanas al borrar NC de compra / Resguardos. *Hecho verificado:* la llamada y el catch. *Inferencia:* el efecto en runtime — confirmar con logs de la cuenta ("Ocurrio un error al borrar…"). | L1146-1152 (vendorcredit), L1180-1186 (resguardo) | 🔴 |
 | TRS-A4 | **(nuevo)** El bloque de beforeLoad está condicionado a `executionContext == "userevent"` (minúscula); `runtime.executionContext` devuelve valores del enum en mayúsculas (`USEREVENT`, `USERINTERFACE`) → la condición sería siempre falsa y el bloque, **código muerto**. El comentario L2013-2019 ("Se comenta esta funcionalidad porque está repetida… el script de cliente también la posee") sugiere desactivación intencional por la vía de la condición. Confirmar en la cuenta (los `log.debug` internos nunca deberían aparecer) y decidir: remover (D) o reactivar (cambio de comportamiento). Incluye además la cláusula redundante `recType != "vendorbill" && recType == "invoice"`. | L2029; comentario L2013-2019 | 🔴 (verificar) |
 | TRS-A5 | `getNumberLiteral()` llama `alert(...)` (API de navegador, inexistente en server) cuando `isNaN(n)`; el ReferenceError cae al catch y la función devuelve `"NO DISPONIBLE"`, que puede terminar grabado en `custbody_l598_monto_escrito` (documento fiscal impreso). | L267-270, catch L359-363 | 🔴 |
 | TRS-A6 | **(nuevo)** Monto en letras con decimales: `const parteDecimal = partes[1] ?? "00"` toma la parte decimal **sin normalizar a 2 dígitos**. `String(10.5)` → `"5"` → "…CON 5/100" (debería ser 50/100); tres decimales → "CON 567/100". `Number.prototype.toFixedOK` existe (L36-39) pero no se usa en este camino. Bug de correctitud del monto escrito. | L425-441 (L427) | 🔴 |
-| TRS-A7 ✅🔧 | **Aprobado por Tekiio 2026-09-08 y aplicado — ver [§3.septies](#3septies-unidad-6--trs-a7-paginación-de-las-3-saved-searches-aplicada-2026-09-08).** ⚠️ Se paginó con un loop local, **no** con los helpers de `utilities`: ver ahí los tres costos que la propuesta no había previsto. Las 3 saved searches del afterSubmit usaban `getRange({start:0, end:1000})` **sin paginación** → truncamiento silencioso sobre 1000 resultados (líneas sin nombre/UM/indicador/cód. percepción calculados). Los helpers paginados existen en `utilities.searchSaved/searchSavedPro` y no se usan. Clasificado Grupo A por los hechos del proyecto (bug de truncamiento). | L1388-1391, L1433-1436, L1479-1482; Utilities L142-159, L221-234 | 🔴 |
+| TRS-A7 ✅🔧 | **Aprobado por Tekiio 2026-09-08 y aplicado — ver [§3.septies](2-transaccion-servidor-bitacora-unidades-5-6.md#3septies-unidad-6--trs-a7-paginación-de-las-3-saved-searches-aplicada-2026-09-08).** ⚠️ Se paginó con un loop local, **no** con los helpers de `utilities`: ver ahí los tres costos que la propuesta no había previsto. Las 3 saved searches del afterSubmit usaban `getRange({start:0, end:1000})` **sin paginación** → truncamiento silencioso sobre 1000 resultados (líneas sin nombre/UM/indicador/cód. percepción calculados). Los helpers paginados existen en `utilities.searchSaved/searchSavedPro` y no se usan. Clasificado Grupo A por los hechos del proyecto (bug de truncamiento). | L1388-1391, L1433-1436, L1479-1482; Utilities L142-159, L221-234 | 🔴 |
 | TRS-A8 | La condición `l598isEmpty(sucursal) \|\| … \|\| !l598isEmpty(location)` fuerza el recálculo en casi el 100% de los guardados (location casi siempre está seteado), aun con los campos completos. **Corregido 2026-08-27 contra el código:** ese recálculo de más NO sobreescribe datos — la única escritura del camino vivo es `custbody_l598_sucursal`, guardada por `isEmpty` (L1005); serie/caja se leen para la condición pero sólo se escriben dentro del bloque muerto de beforeLoad (TRS-A4, L2077-2097), y `obtenerSucursal` es de solo lectura (verificado: sin escrituras en L694-960). El término extra sólo consume governance. Reducir la condición a `isEmpty(sucursal)` es equivalente en datos → la parte técnica pasa a Grupo B; la pregunta de negocio queda invertida: hoy una sucursal cargada nunca se recalcula al cambiar location — ¿es lo deseado? | L995 (beforeSubmit), L1005 (guarda), L2057 (beforeLoad muerto) | 🔴 → pregunta de negocio |
 
 ### Grupo B — Governance / Performance (SÍ entra)
@@ -98,259 +98,28 @@ UserEvent "ómnibus" de la localización Uruguay que corre sobre casi todas las 
 
 Los 🔴 y todo el Grupo A van al [registro-aprobaciones.md](../registro-aprobaciones.md) antes de planificarse.
 
-
-## 3.bis Unidad 1 — C + D mecánicos (aplicada 2026-08-20)
-
-**Archivo:** `LOC UY/L598 -Transacción (Servidor)_REF.js` · 2.128 → 2.125 líneas · `node --check` ✔
-**Criterio:** sólo cambios sin efecto sobre el flujo. Todo lo que requiriera una inferencia no verificada quedó afuera y está listado abajo.
-
-| ID | Qué se hizo | Verificación |
-|---|---|---|
-| TRS-C1 | `eval(c/d/u)` → `Number(...)` en `letras()` | Los 3 argumentos vienen **siempre** de `parseInt()` en `getNumberLiteral` → equivalentes, `NaN` incluido. Verificado en los 6 call sites |
-| TRS-C3 | `var` → `const/let` en el bloque `creditmemo`; `let` → `const` en `setearCodigoImpuestosLineas` y su `proceso` | Ver ⚠️ abajo: **no** se tocaron los `var` de `getNumeroEnLetras` |
-| TRS-C4 | Helper `esVerdadero()` reemplazando **20 ocurrencias** del patrón `x == 'T' \|\| x == true`; filtro objeto plano → `search.createFilter` (`ANYOF === 'anyof'`) | Helper probado contra la semántica original en 9 casos (`"T"`, `true`, `"F"`, `false`, `""`, `null`, `undefined`, `"X"`, `1`) |
-| TRS-D2 | Eliminados: literal suelto `999123456789;`, 3 comentarios `nlapi*`, bloque comentado del monto escrito en beforeSubmit | El `submitFields` comentado **se conserva a propósito** (ver abajo) |
-| TRS-D3 | `Array.prototype.pushSafe` → función de módulo `pushSafe(array, val)`; 4 call sites actualizados. `Number.prototype.toFixedOK` eliminado (0 usos) | Misma semántica, log del caso descartado incluido |
-| TRS-D5 | Removidos los 15 números de línea hardcodeados y desactualizados de los logs; corregido el mojibake `NumÃ©rico`; `INFORACIÓN` → `INFORMACIÓN` | El `alert()` de la misma línea **no se tocó**: es TRS-A5 |
-| TRS-D6 | 3 lecturas del mismo `custcol_l598_codigo_impuesto` (misma sublista, misma línea, sin nada que las modificara en el medio) → 1 | `getSublistValue` pasó de 34 a 32 ocurrencias |
-| TRS-D7 | **Documentado, NO unificado** | Ver abajo |
-
-### Lo que quedó deliberadamente afuera, y por qué
-
-**⚠️ Los `var` de `getNumeroEnLetras` no son residuo de estilo — son estructurales.** El bloque `else` (rama "usar decimales") **reasigna `parteEntera`, `parteEnteraLetras` y `numeroEnLetras` sin declararlas**, dependiendo del hoisting de los `var` de la rama `if`. El propio archivo lo marca con `/* eslint-disable no-var, block-scoped-var */`. Convertirlos a `let` rompería esa rama — que, según la [duda abierta #9](#7-dudas-abiertas-no-verificable-desde-el-repo), es probablemente **la que corre en producción**. Se dejaron intactos. Arreglar esto pertenece al mismo cambio que TRS-A6.
-
-**TRS-D7 — `isEmpty` no se unificó.** La versión local también trata como vacíos los strings `"null"` y `"undefined"`; `utilities.isEmpty` no. Con 73 usos de la local y 1 de la de utilities, unificarlas es un **cambio de comportamiento**, no una limpieza. Se documentó la divergencia en el código y queda como pendiente. Ídem `l598esOneworld`, que además se toca en TRS-B3 (memoización).
-
-**Ramas `else` inalcanzables (TRS-D2) y `UserEventType.COPY` (TRS-D2):** su inalcanzabilidad es una **inferencia** del análisis, no un hecho verificado. Quitar un `log.error` inalcanzable no compensa el riesgo de que la inferencia sea falsa. Quedan pendientes de verificación en la cuenta.
-
-**El `submitFields` comentado se conserva**, contra el criterio general de borrar código muerto: es la evidencia de que la alternativa que propone [TRS-A1](../propuestas/TRS-A-transaccion-servidor.md) ya estaba ensayada en este código. Lleva un comentario que lo explica, para que nadie lo borre por prolijidad.
-
-### Hallazgo nuevo durante el refactor
-
-**El monto en letras ESTUVO en `beforeSubmit` y alguien lo movió a `afterSubmit`.** El bloque comentado que se eliminó estaba rotulado *"? Pasado al afterSubmit"*. Es directamente relevante para TRS-A1, que propone el movimiento inverso: **hay que averiguar por qué se movió antes de proponer devolverlo**. Si `total` no es definitivo en `beforeSubmit`, es el mismo tipo de problema que `taxdetails` en STC-A1 y lo resolvería la misma guarda híbrida — pero hay que verificarlo, no suponerlo. Registrado como [duda abierta #10](#7-dudas-abiertas-no-verificable-desde-el-repo).
-
-### Un error que la verificación atrapó
-
-El reemplazo automatizado de las 20 ocurrencias de `x == 'T' || x == true` **también reescribió el cuerpo del helper que las reemplaza**, dejando `esVerdadero` llamándose a sí misma — recursión infinita. **`node --check` lo dio por válido**, porque es sintácticamente correcto. Se detectó revisando el diff, no por el chequeo de sintaxis. De ahí que el helper hoy esté escrito en tres líneas con variables intermedias, y que tenga prueba unitaria de sus 9 casos. Recordatorio de que en reemplazos masivos **hay que revisar el diff, siempre**.
+> 📋 **`TRS-B6` registrado (2026-09-15)** en estado ⏳ Pendiente. Es independiente de `TRS-A7`, ya aplicado: A7 resolvió el truncamiento con paginación, B6 resuelve el acople posicional a las columnas definidas en la cuenta. Conviene pedirlo junto con las otras 4 migraciones a SuiteQL del proyecto (`CRT-B1`, `ARI-B4`, `CDF-B1`, `SUI-B1`) como un único criterio, no como 5 pedidos sueltos.
 
 
-## 3.ter Unidad 2 — B performance (aplicada 2026-08-20)
+## 3.bis Unidades aplicadas → bitácoras
 
-**Archivo:** el mismo `_REF` · 2.125 → 2.069 líneas · `node --check` ✔
-**Criterio:** cada cambio con su argumento de equivalencia escrito. Ninguno altera qué se escribe ni en qué orden.
+El detalle de las 6 unidades ya aplicadas vive en dos **bitácoras de aplicación**, para que este informe se lea rápido:
 
-| ID | Qué se hizo | Argumento de equivalencia |
-|---|---|---|
-| TRS-B1 | `setearCodigoImpuestosLineas`: `filter()` por línea → `Map` por `taxdetailsreference`. O(items × taxdetails) → O(items + taxdetails) | "Primer match gana": el `Map` guarda sólo la primera aparición de cada referencia, igual que `filter(...)[0]`. **Es el mismo cambio que STC-B1, ya caracterizado byte a byte** en Seteo de Tax Codes |
-| TRS-B2 | Los **3 cruces** con `filter()` anidado en `for` y `push` desde adentro del callback → helper `indexarPor()` que devuelve `Map<clave, elementos[]>` | El `filter` recorría el array fuente **en orden** y empujaba un objeto **por cada** coincidencia. Recorrer la lista del índice hace lo mismo: mismo orden, misma cantidad, multi-match conservados. El consumidor sigue tomando `[0]` |
-| TRS-B3 | **Parcial**: `getRange({end: 1000})` → `{end: 1}` en `l598esOneworld` (chequeo de existencia) y en `getSucursalxLocation` (sólo lee `[0]`) | Ninguna de las dos usaba más de una fila. Ver abajo por qué **no** se memoizó |
-| TRS-B4 | **29 `log.debug` eliminados** de 43 (los que serializaban estructuras con `JSON.stringify`) + el **loop cuyo único cuerpo era un log** y hacía 2 `getSublistValue` por línea | Los 21 `log.error` se conservan intactos. **El costo se pagaba aunque el Log Level no fuera Debug**: los argumentos se evalúan antes de la llamada |
-| TRS-B5 | 1ª pasada: condición `\|\| tipoSublistaConsultar != 'time'` → `== 'item'`, igualándola a la 2ª pasada | Ver la cadena completa abajo |
+**[Unidades 1-4 — refactor B/C/D](2-transaccion-servidor-bitacora-unidades-1-4.md)** (2026-08-20, sin cambio de comportamiento)
 
-### El argumento de TRS-B5, completo
-
-La 1ª pasada recolectaba líneas de `itemcost`/`expcost`/`expenses`; la 2ª sólo escribe `item` y `time`. Esas filas viajaban por toda la cadena — alimentaban `arrayItem` y `arrayTaxCodes`, que son los filtros de dos saved searches, y producían entradas en `arrayFinalAux` y `arrayFinal` — para no usarse nunca.
-
-Se verificó la cadena entera, no sólo el extremo: si un artículo o un tax code aparece **también** en una línea `item`, se sigue recolectando desde ahí. Si aparecía **sólo** en `itemcost`/`expcost`, sus resultados de búsqueda únicamente podían cruzar contra entradas de `arrayFinalAux` con esa misma sublista — que la 2ª pasada ignora. El output para las líneas `item` y `time` es idéntico.
-
-### Por qué TRS-B3 quedó parcial — el análisis sobreestimó la oportunidad
-
-El hallazgo decía "`customrecord_l598_datos_impositivos_emp` se consulta **4 veces por guardado**, memoizar por ejecución". Al mapear los call sites reales, esas 4 consultas **no ocurren en la misma ejecución**:
-
-| Entry point | Consultas a ese registro |
+| Unidad | Qué cubre |
 |---|---|
-| `beforeSubmit` | `l598esOneworld()` (vía `obtenerSucursal`) + `getSucursalxLocation()` = **2** |
-| `afterSubmit` | `l598esOneworld()` + `usarDecimales` (vía `getNumeroEnLetras`) = **2** |
+| [1 — C + D mecánicos](2-transaccion-servidor-bitacora-unidades-1-4.md#3bis-unidad-1--c--d-mecánicos-aplicada-2026-08-20) | Lo que quedó afuera y por qué · hallazgo nuevo durante el refactor · el error que atrapó la verificación |
+| [2 — B performance](2-transaccion-servidor-bitacora-unidades-1-4.md#3ter-unidad-2--b-performance-aplicada-2026-08-20) | El argumento completo de TRS-B5 · por qué TRS-B3 quedó parcial · riesgo residual declarado |
+| [3 — TRS-D4 división en funciones](2-transaccion-servidor-bitacora-unidades-1-4.md#3quater-unidad-3--trs-d4-división-en-funciones-aplicada-2026-08-20) | El resultado · verificación de scope y el bug que atrapó · lo que NO se dividió |
+| [4 — lo que se destrabó verificando](2-transaccion-servidor-bitacora-unidades-1-4.md#3quinquies-unidad-4--lo-que-se-destrabó-verificando-aplicada-2026-08-20) | TRS-D7 parcial · TRS-D2 de inferencia a hecho · TRS-D4 `beforeSubmit` 208→150 líneas · el peor de los tres bugs de scope |
 
-Y **el scope del módulo no se comparte entre entry points** — medido en STC el 2026-08-20. Una memoización de módulo no ahorraría ninguna búsqueda: agregaría maquinaria por cero beneficio.
+**[Unidades 5-6 — Grupo A aprobado](2-transaccion-servidor-bitacora-unidades-5-6.md)** (2026-09-08, alteran comportamiento)
 
-Consolidar las dos consultas de cada entry point en una sola **sí** ahorraría una búsqueda, pero no es equivalente: `l598esOneworld` filtra por `custrecord_l598_dat_imp_es_oneworld = true` y pregunta por **existencia**, mientras que las otras dos traen el registro y leen `[0]`. Si hubiera **más de un registro de configuración activo**, las dos formas dan resultados distintos.
-
-Queda como [duda abierta #11](#7-dudas-abiertas-no-verificable-desde-el-repo): confirmar con Tekiio si puede haber más de un `datos_impositivos_emp` activo por subsidiaria. Si la respuesta es no, la consolidación pasa a ser segura y ahorra 1 búsqueda por entry point.
-
-### Riesgo residual declarado
-
-Las comparaciones originales de los cruces eran `==` (débil); las claves de los `Map` se normalizan con `String()`. Equivalente para ids numéricos y string — el dominio real — pero es el **mismo riesgo residual que se declaró en STC-B1 y que la caracterización de aquel script cerró en ✅ idéntico**. Acá se cierra igual: byte a byte contra el original.
-
-La clave compuesta de `arrayItemTimeSS` (`itemId` + separador + `idTime`) no puede colisionar porque ambos componentes son ids internos numéricos.
-
-
-## 3.quater Unidad 3 — TRS-D4: división en funciones (aplicada 2026-08-20)
-
-**Archivo:** el mismo `_REF` · 2.069 → 2.180 líneas (crecen por las firmas y la documentación; el código ejecutable no) · `node --check` ✔
-
-**Método: extracción pura, sin reordenar efectos.** Ningún bloque se reescribió a mano: se cortaron por balanceo de llaves y se re-indentaron programáticamente. Cada función queda en el mismo punto de la secuencia donde corría el bloque.
-
-### El resultado
-
-| Función | Líneas | Qué hace |
-|---|:--:|---|
-| `escribirMontoEscrito` | 23 | Monto en letras (gate `!= vendorbill` conservado adentro) |
-| `recolectarLineasDeSublistas` | 107 | 1ª pasada: recolecta líneas, ids de artículo y de tax code |
-| `buscarInfoArticulos` | 45 | Saved search `customsearch_l598_articulos` |
-| `buscarInfoTimebill` | 49 | Saved search `customsearch_l598_timebill` |
-| `buscarInfoTaxCodes` | 44 | Saved search `customsearch_l598_cod_impuestos` |
-| `cruzarLineasConArticulos` | 53 | Los 2 cruces que producen `arrayFinalAux` |
-| `cruzarConTaxCodes` | 45 | Cruce final con los tax codes (rama `else` incluida) |
-| `escribirColumnasDeLineas` | 213 | 2ª pasada: escribe las columnas custom por línea |
-| `desaplicarYAplicarNC` | 24 | Toggle de `apply` en NC |
-
-**`afterSubmit`: 722 → 98 líneas.** Hoy se lee como lo que hace: carga el registro, escribe el monto, setea tax codes, recolecta, busca, cruza, escribe columnas, pone el número de comprobante, re-aplica la NC y guarda.
-
-Los arrays que antes se llenaban por **efecto colateral** desde adentro de un `filter` o de un `for` ahora se declaran, se llenan y se devuelven dentro de su función. Es el cambio que hace verificable el resto.
-
-### Verificación de scope — y el bug que atrapó
-
-Se corrió un chequeo automático sobre las **12 funciones** del archivo, buscando referencias a variables que ya no estén en su alcance. Encontró una real: `escribirColumnasDeLineas` usaba `recId`, que no era parámetro. **En runtime habría sido un `ReferenceError` dentro del try/catch del afterSubmit: las columnas nunca se habrían escrito y sólo habría quedado una línea de log.** Se agregó a la firma y a la llamada.
-
-`node --check` **no lo detectó**: es sintácticamente válido. Es el segundo bug de esta clase en el refactor de este script — el otro fue el helper `esVerdadero` que se reemplazó a sí mismo. En ambos casos lo atrapó una verificación específica, no el chequeo de sintaxis.
-
-Estado final: **12 funciones, 0 referencias sin resolver, 0 funciones huérfanas** (las 9 nuevas se definen y se llaman exactamente una vez).
-
-### Lo que NO se dividió, y por qué
-
-**`beforeSubmit` (208 líneas) queda entero.** El plan lo incluía, pero sus dos secciones más separables son las ramas `DELETE` de `vendorcredit` y de Resguardo — que es exactamente donde vive **TRS-A3** (el `objRecord.delete` inexistente que deja retenciones huérfanas). Tocar ese código antes de que Tekiio decida qué hacer con A3 mezclaría un refactor con un bug pendiente y haría ambiguo el diagnóstico. Se divide cuando A3 esté resuelto.
-
-### Advertencia sobre la caracterización
-
-Las 3 unidades se van a caracterizar **juntas**, por decisión de alcance. Conviene tenerlo presente al leer el resultado: si aparece una diferencia, hay que discriminar entre ≈60 cambios de 4 naturalezas distintas (estándares, performance, estructura y eliminación de logs) en vez de entre los de una sola unidad. Los candidatos más probables, en orden: la normalización `String()` de las claves de los `Map` (TRS-B1/B2), la condición de recolección de TRS-B5, y el movimiento de bloques de TRS-D4.
-
-
-## 3.quinquies Unidad 4 — Lo que se destrabó verificando (aplicada 2026-08-20)
-
-Tres cambios que en las unidades anteriores habían quedado afuera. **Ninguno estaba bloqueado por aprobación de Tekiio: los tres esperaban una verificación que se podía hacer desde el código o desde la cuenta.**
-
-`node --check` ✔ · **28 funciones, 0 referencias sin resolver** · 2.206 líneas
-
-### TRS-D7 — parcial: se eliminó el uso mixto, no la duplicación
-
-Había **una sola** llamada a `utilities.isEmpty` en todo el archivo, sobre `idTransApply`, que es siempre un array. Para un array las dos implementaciones devuelven `false` idéntico (un array no es `""`, `null`, `undefined`, `"null"` ni `"undefined"`), y el `&& length > 0` que sigue cubre cualquier diferencia. Se cambió a `l598isEmpty`: **el uso mixto desaparece sin cambiar comportamiento**.
-
-Lo que sigue pendiente es la unificación inversa — las 70 llamadas locales hacia `utilities.isEmpty` — y **no es cuestión de permiso sino de verificabilidad**: cambiaría el resultado en cada línea donde un campo devuelva los strings `"null"` o `"undefined"`, y no hay forma de enumerar esos casos sin ejercitar los 9 tipos de transacción en todos sus caminos. Beneficio cosmético, riesgo silencioso y disperso: **no se hace, con o sin aprobación**.
-
-### TRS-D2 — las dos ramas `else` inalcanzables: de inferencia a hecho
-
-El análisis las marcaba como *"inalcanzables tras `!l598isEmpty(objeto)` que siempre es true"*, con la salvedueda de ser una inferencia. **Verificado el 2026-08-20 leyendo `obtenerSucursal` completa:**
-
-- tiene **un solo `return`**,
-- **sin `try`/`catch`**,
-- y devuelve `informacionSucursal`, inicializado siempre como objeto con `sucursal = 1` y `serie = 1`.
-
-Nunca puede ser `null` ni `undefined`, así que `!l598isEmpty(infoSucursal)` es siempre verdadero y los `else` de `beforeSubmit` y `beforeLoad` eran código muerto. Se eliminaron, dejando en su lugar el argumento de por qué.
-
-### TRS-D4 — división de `beforeSubmit`: 208 → 150 líneas
-
-Se extrajeron las dos ramas `DELETE` a `borrarRetencionesDeVendorCredit()` y `borrarRetencionesDeResguardo()`.
-
-**Corrección de un razonamiento propio.** En la unidad 3 se dejó sin dividir con el argumento de que "el día que se apruebe TRS-A3, el diff mezclaría el arreglo del bug con el movimiento del código". **Es al revés:** extraer ahora y caracterizar hace que el arreglo posterior de A3 sea un diff chico y aislado. El mezclado sólo ocurriría haciendo las dos cosas en el mismo cambio.
-
-Las dos funciones llevan documentado que contienen TRS-A3 y que **el bug no se corrigió**: sigue esperando decisión de Tekiio.
-
-> ⚠️ **La rama `DELETE` no está caracterizada todavía.** Requiere el caso 4 de la matriz (crear y borrar una NC de compra de prueba con retenciones asociadas). Es código movido, no reescrito, pero movido igual: **no se da por bueno hasta correr ese caso**.
-
-### El tercer bug que atrapó el chequeo de scope — y el peor de los tres
-
-Las dos funciones nuevas usaban `recType` sin recibirlo como parámetro. A diferencia del caso de `recId` en la unidad 3, acá la referencia está en la **condición de guarda** y la llamada quedó incondicional: habría lanzado `ReferenceError` en **todos los guardados, de cualquier tipo de transacción**, no sólo en los DELETE.
-
-`node --check` lo dio por válido, otra vez. Van **tres bugs de esta clase** en el refactor de este script, los tres detectados por verificaciones específicas y ninguno por el chequeo de sintaxis:
-
-| # | Unidad | Bug | Consecuencia si llegaba a la cuenta |
-|:--:|---|---|---|
-| 1 | 1 | El regex reemplazó el cuerpo del helper `esVerdadero` por una llamada a sí misma | Recursión infinita en cada línea evaluada |
-| 2 | 3 | `escribirColumnasDeLineas` sin el parámetro `recId` | Columnas fiscales nunca escritas, sólo un log |
-| 3 | 4 | `borrarRetenciones*` sin el parámetro `recType` | **Todos** los guardados fallando |
-
-**Conclusión de método:** en un refactor que mueve código programáticamente, `node --check` verifica que el archivo *parsea*, no que *funciona*. El chequeo que sirve es el de alcance: para cada función, calcular sus locales (declaraciones + parámetros + destructuring) y buscar referencias a variables que ya no estén en su scope, excluyendo accesos a propiedad. Es lo único que atrapó los tres.
-
-## 3.sexies Unidad 5 — TRS-A2: early return (aplicada 2026-09-08)
-
-**Aprobación:** Tekiio, 2026-09-08, junto con TRS-A1 y TRS-A7. Es el primero de los tres que se aplica: no depende de nada y su validación es la más simple.
-
-### Verificación previa — no se aplicó sobre la palabra de la propuesta
-
-La propuesta afirmaba que el `afterSubmit` es un no-op para `salesorder`/`transferorder`. Se trazó el camino completo antes de tocar nada, porque si alguna escritura se hubiera pasado por alto **el early return la eliminaría en silencio** — y eso sería un cambio de comportamiento real, no formal.
-
-| Paso del `afterSubmit` | Con `salesorder` / `transferorder` |
+| Unidad | Qué cubre |
 |---|---|
-| `record.load()` | **corre** — ~10 GU |
-| Bloque de manejo de líneas | salteado por su guard de tipo |
-| Bloque del nro. de comprobante | salteado por su guard de tipo |
-| `desaplicarYAplicarNC` | **no-op** — todo su cuerpo está dentro de `if (recType == "creditmemo")` |
-| `objRecord.save()` | **corre** — ~20 GU, sin escribir nada |
-
-Entre medio, dos `log.debug`. Confirmado: un `load`+`save` completo para dejar el registro igual.
-
-**El llenado de sucursal vacía, que sí aplica a estos tipos, no se toca.** Ocurre en `beforeSubmit`, en un `setValue` que está *antes y por fuera* del guard de exclusión por tipo. Y el cierre de `beforeSubmit` solo tiene los dos borrados de retenciones, guardados por `vendorcredit` y resguardo.
-
-### Lo aplicado
-
-Un early return **antes del `load`**, que es donde empieza el costo. Los dos guards por tipo de más abajo **quedan a propósito**: ahora son redundantes, pero dicen lo mismo que el early return en vez de contradecirlo, y sostienen el comportamiento si alguna vez esta salida se mueve o se revierte.
-
-Se agrega un `log.audit` con la rama tomada, por el mismo criterio que en STC-A1: allí un camino feliz silencioso fue justamente lo que oculta que el ahorro no se materializaba, hasta que se midió el governance.
-
-### Lo que este cambio NO ahorra, y por qué hay que decirlo
-
-El análisis original citaba, además del load+save, que *"el save re-dispara los UserEvents del registro"*. **Es falso** y quedó cerrado el 2026-09-08 (ver §7.4): quitar el save **no** elimina una segunda ejecución de otros scripts, porque esa segunda ejecución nunca ocurría.
-
-El ahorro es el load+save en sí, que alcanza de sobra. Se anota porque **un beneficio inflado en la propuesta es un beneficio que la medición va a desmentir**, y perder credibilidad en la medición cuesta más que el beneficio que se gana citando de más.
-
-### Criterio de caracterización
-
-| Qué | Esperado |
-|---|---|
-| Log del `afterSubmit` | `TRS-A2 early-return recordType=salesorder id=<n> eventType=<create\|edit>` |
-| APM, este script | `Usage Count = 0` y `Record Operations = 0` en ese guardado |
-| El registro guardado | **idéntico** al de una orden guardada antes del cambio, incluida `custbody_l598_sucursal` |
-| Ejecuciones por script en el Execution Log | **las mismas que antes** (una por script) — porque la cascada no existía. Si aparecieran menos, la premisa de §7.4 estaría mal y habría que reabrirla |
-
-La última fila es el control que convierte a §7.4 en falsable: si el early return hiciera desaparecer ejecuciones de otros scripts, la conclusión de que no hay cascada quedaría refutada.
-
-✔ **Sintaxis:** `node --check` OK.
-
-## 3.septies Unidad 6 — TRS-A7: paginación de las 3 saved searches (aplicada 2026-09-08)
-
-**Aprobación:** Tekiio, 2026-09-08. Aprobaron la paginación; **quedó sin responder** la otra mitad del pedido — si el volumen de 1.000 filas es alcanzable en la operación real. No bloquea, porque el resultado solo cambia por encima de ese volumen, pero define la **prioridad**: si nunca se llega, es robustez preventiva.
-
-### Alcance verificado
-
-De los **10** `getRange` del script, solo **3** truncan — las tres saved searches del `afterSubmit`. Los otros 7 usan `end: 1`: lookups de un resultado, sin riesgo.
-
-| Saved search | Columnas | Qué alimenta |
-|---|:--:|---|
-| `customsearch_l598_articulos` | 3 | nombre y unidad de medida por línea de artículo |
-| `customsearch_l598_timebill` | 4 | ídem para líneas de tiempo |
-| `customsearch_l598_cod_impuestos` | 5 | indicador de facturación, cód. percepción, flags |
-
-### Por qué NO se usaron los helpers de `utilities`
-
-La propuesta decía reusar `utilities.searchSaved` / `searchSavedPro`, que efectivamente paginan. Al leerlos aparecieron tres costos que la propuesta no había previsto — y el tercero es el que decide:
-
-| # | Costo | Impacto |
-|:-:|---|---|
-| 1 | `searchSavedPro` llama `armarArreglosSS()` sin condición: recorre **cada fila por cada columna** con un `getValue` | Mapeamos por índice de columna, así que ese array se descarta. Hasta **1.000 × 5 = 5.000 `getValue` tirados** por búsqueda — y peor justamente en el caso de volumen alto que TRS-A7 viene a cubrir |
-| 2 | `searchSaved` emite 2 `log.audit` por llamada, uno con `JSON.stringify` del array de ids | Es el patrón que **TRS-B4 acaba de sacar** del camino caliente de este mismo script |
-| 3 | Los dos capturan la excepción y la devuelven como `objRespuesta.error` | Este `afterSubmit` **no tiene `try/catch`**: hoy un fallo de búsqueda es un error no manejado y **ruidoso**. Adoptarlos sin chequear ese flag convertiría el fallo en **silencioso**, con líneas incompletas viajando al CFE. Es el mismo defecto que STC-A2 |
-
-El punto 3 es el argumento, no el rendimiento: **chequear el flag implica escribir el guard de todos modos**, y entonces la reutilización deja de ahorrar código.
-
-**Lo aplicado** es un loop de paginado local, `correrSavedSearchPaginada`, usado por las tres. Preserva la semántica de error actual, no agrega pasadas sobre el result set, y corta en la primera página incompleta — lo que evita la llamada extra que hace el paginado de `utilities` cuando el total es múltiplo exacto de 1.000.
-
-**El costo asumido:** la lógica de paginado queda repetida una cuarta vez en el proyecto. Es el más barato de los cuatro, y está declarado en el comentario del helper para que se pueda discutir.
-
-> ⚠️ **Esto se aparta de lo que la propuesta le dijo a Tekiio.** Conviene mencionárselo: lo aprobado fue *paginar*, y se paginó; lo que cambió es el mecanismo, por razones que no se conocían al escribir la propuesta.
-
-### Dos hallazgos sobre `L598 - Utilities.js`
-
-Salieron de leer los helpers y **no son de este script**: corresponden al análisis propio de Utilities.
-
-1. **`operadorBusqueda()` hace `switch` sobre nombres en MAYÚSCULA** (`'ANYOF'`, `'IS'`) y **no tiene rama `default`**: el `var operator = ''` inicial se devuelve tal cual si no hay match. Pasarle `search.Operator.ANYOF` — que vale `'anyof'` — produce un operador vacío, el `createFilter` falla dentro del `try` del helper y queda como `error: true`. Es **el mismo desajuste de mayúsculas contra un enum de NetSuite que TRS-A4**. Verificado que los llamadores actuales del proyecto pasan las mayúsculas correctas, así que **no hay bug activo** — pero es una trampa esperando al próximo.
-2. **`objRsponseFunction` se asigna sin declarar** en los dos helpers (`objRsponseFunction = new Object()`): es un **global implícito** en un módulo compartido por todos los scripts de la localización.
-
-### Criterio de caracterización
-
-Por debajo de 1.000 filas el output debe ser **idéntico**, y ese es el caso que se puede probar hoy: guardar una transacción normal y comparar las columnas de línea contra el baseline. El caso de >1.000 filas no es reproducible sin saber si el volumen existe — justamente la pregunta que quedó abierta.
-
-✔ **Sintaxis:** `node --check` OK.
+| [5 — TRS-A2 early return](2-transaccion-servidor-bitacora-unidades-5-6.md#3sexies-unidad-5--trs-a2-early-return-aplicada-2026-09-08) | Verificación previa (no se aplicó sobre la palabra de la propuesta) · lo aplicado · lo que NO ahorra · criterio de caracterización |
+| [6 — TRS-A7 paginación](2-transaccion-servidor-bitacora-unidades-5-6.md#3septies-unidad-6--trs-a7-paginación-de-las-3-saved-searches-aplicada-2026-09-08) | Alcance verificado · por qué NO se usaron los helpers de `utilities` · dos hallazgos sobre `L598 - Utilities.js` |
 
 ## 4. Recomendaciones Grupo A (aparte, requieren aprobación Tekiio)
 
@@ -376,7 +145,7 @@ Contexto UAT: órdenes de venta/compra y factura/NC de **compra** están OK. Bas
 
 > 🔄 **Dos correcciones al contexto de este § (2026-09-10).**
 >
-> 1. **El bloqueo por CAE 100000 ya no aplica.** Tekiio destrabó la emisión: la invoice **15822** generó CAE el 04/09 (`E-Factura Local A-4-15822`, `CAE : 48`, detalle de LOG 3060 con `SIN ERROR`). Las facturas de venta **sí** se pueden re-guardar. Queda como pendiente aparte que el flujo de **resguardos** seguía reportando el middleware sin configurar el 07/09 — son configuraciones distintas, ver [§3.septies](#3septies-unidad-6--trs-a7-paginación-de-las-3-saved-searches-aplicada-2026-09-08).
+> 1. **El bloqueo por CAE 100000 ya no aplica.** Tekiio destrabó la emisión: la invoice **15822** generó CAE el 04/09 (`E-Factura Local A-4-15822`, `CAE : 48`, detalle de LOG 3060 con `SIN ERROR`). Las facturas de venta **sí** se pueden re-guardar. Queda como pendiente aparte que el flujo de **resguardos** seguía reportando el middleware sin configurar el 07/09 — son configuraciones distintas, ver [§3.septies](2-transaccion-servidor-bitacora-unidades-5-6.md#3septies-unidad-6--trs-a7-paginación-de-las-3-saved-searches-aplicada-2026-09-08).
 > 2. **El aislamiento NO se cierra por audiencia.** Lo que aísla al `_REF` es `Status = Testing`, que ejecuta **solo para el owner del Script record** e ignora la audiencia. Y el 07/09 se comprobó que las audiencias de este script y de `Seteo de Tax Codes` **no son complementarias**: los dos corrieron juntos sobre la transacción 15824, mismo usuario y mismo timestamp. **Verificar el aislamiento por corrida** con el APM acotado a un log, no por configuración.
 
 | # | Flujo UAT | Qué caracteriza | Comparar |
