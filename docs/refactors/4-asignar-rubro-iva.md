@@ -3,7 +3,7 @@
 **Script:** `L598 - Asignar Rubro IVA` · **Archivo:** `LOC UY/L598 - Asignar Rubro IVA.js` · **LOC:** 473
 **Tipo:** UserEvent · **Entry points declarados:** solo `afterSubmit` (`return` en líneas 470-472) → consistente con el **×1** del baseline
 **Módulo:** Transacciones · **Toca impuestos:** sí 💰 · **Tiempo medido:** **2.9s ×1** (Factura de Compra; 2.7s en Factura y NC de Venta — [baseline](../flujos-prueba-y-plan-ejecucion.md))
-**Estado:** análisis PRE-refactor (fase 1 del flujo §4 de la metodología). Ningún cambio aplicado.
+**Fase:** REFACTOR — **B1, B2, C1-C3 y D1-D7 aplicados el 2026-09-15** en `L598 - Asignar Rubro IVA_REF.js` (ver [§3.bis](#3bis-unidades-aplicadas-2026-09-15)). El original **nunca** se modifica. **Pendiente: deploy aislado y caracterización.**
 
 ---
 
@@ -82,23 +82,58 @@ Ordenado por criterio del cliente #1→#6. Estado inicial: todo ⏳ Propuesto (p
 
 | Criterio | ID | Qué se modifica | Riesgo | Estado |
 |---|---|---|:--:|:--:|
-| #2 | ARI-B2 | Ejecutar SS de mapeo solo si hay líneas que procesar; evaluar evitar la búsqueda de `l598esOneworld` | 🟡 | ⏳ Propuesto |
-| #2 | ARI-B3 | Paginación en las 2 búsquedas ad-hoc (135-138, 188-191) | 🟡 | ⏳ Propuesto |
+| #2 | ARI-B2 | Ejecutar SS de mapeo solo si hay líneas que procesar; evaluar evitar la búsqueda de `l598esOneworld` | 🟡 | 🔧 Aplicado |
+| #2 | ARI-B3 | Paginación en las 2 búsquedas ad-hoc (135-138, 188-191) | 🟡 | ⏳ Reclasificado → Grupo A ([registro](../registro-aprobaciones.md)) |
 | #2 | ARI-B4 | Migración SS → SuiteQL/Workbooks (prioritario v2) | 🔴 | ⏳ Propuesto (requiere aprobación) |
-| #3 | ARI-B1 | `filter`-en-loop → `Map` indexado (primer match gana) | 🟡 | ⏳ Propuesto |
-| #3 | ARI-B5 | Eliminar re-mapeo manual duplicado de resultados en `getRubrosIVA` | 🟡 | ⏳ Propuesto |
-| #4 | ARI-C1 | `var` → `const`/`let` | 🟢 | ⏳ Propuesto |
-| #4 | ARI-C2 | Unificar `getSublistValue` a sintaxis de objeto | 🟢 | ⏳ Propuesto |
-| #4 | ARI-C3 | `search.Summary.GROUP` en lugar de literales mixtos | 🟢 | ⏳ Propuesto |
-| #4 | ARI-D7 | Documentar/robustecer contrato posicional de columnas de SS | 🟡 | ⏳ Propuesto |
-| #5 | ARI-D1 | Eliminar dead code (`createError`, `N/error`, comentados, `return true`) | 🟢 | ⏳ Propuesto |
-| #5 | ARI-D2 | Eliminar lecturas muertas por línea (293-294) | 🟢 | ⏳ Propuesto |
-| #5 | ARI-D4 | Extraer bloque publicidad; corregir JSDoc | 🟡 | ⏳ Propuesto |
-| #5 | ARI-D5 | Reducir logs de dump (conservar `log.error`) | 🟢 | ⏳ Propuesto |
-| #6 | ARI-D3 | Dedup del doble filtro de expensas | 🟡 | ⏳ Propuesto |
-| #6 | ARI-D6 | Simplificar `getRubro` preservando semántica | 🟢 | ⏳ Propuesto |
+| #3 | ARI-B1 | `filter`-en-loop → `Map` indexado (primer match gana) | 🟡 | 🔧 Aplicado |
+| #3 | ARI-B5 | Eliminar re-mapeo manual duplicado de resultados en `getRubrosIVA` | 🟡 | ⏳ Bloqueado (duda abierta #5; ver §3.bis) |
+| #4 | ARI-C1 | `var` → `const`/`let` | 🟢 | 🔧 Aplicado |
+| #4 | ARI-C2 | Unificar `getSublistValue` a sintaxis de objeto | 🟢 | 🔧 Aplicado |
+| #4 | ARI-C3 | `search.Summary.GROUP` en lugar de literales mixtos | 🟢 | 🔧 Aplicado |
+| #4 | ARI-D7 | Documentar/robustecer contrato posicional de columnas de SS | 🟡 | 🔧 Aplicado |
+| #5 | ARI-D1 | Eliminar dead code (`createError`, `N/error`, comentados, `return true`) | 🟢 | 🔧 Aplicado |
+| #5 | ARI-D2 | Eliminar lecturas muertas por línea (293-294) | 🟢 | 🔧 Aplicado |
+| #5 | ARI-D4 | Extraer bloque publicidad; corregir JSDoc | 🟡 | 🔧 Aplicado |
+| #5 | ARI-D5 | Reducir logs de dump (conservar `log.error`) | 🟢 | 🔧 Aplicado |
+| #6 | ARI-D3 | Dedup del doble filtro de expensas | 🟡 | 🔧 Aplicado |
+| #6 | ARI-D6 | Simplificar `getRubro` preservando semántica | 🟢 | 🔧 Aplicado |
 
 **Matriz de riesgo:** 🟢 ×7 (sin aprobación) · 🟡 ×7 (revisión conjunta) · 🔴 ×1 (ARI-B4 — aprobación explícita). Los 🔴 **y todo el Grupo A** van a [registro-aprobaciones.md](../registro-aprobaciones.md).
+
+## 3.bis Unidades aplicadas (2026-09-15)
+
+**Archivo:** `LOC UY/L598 - Asignar Rubro IVA_REF.js` · 472 → 459 líneas de código (más 61 de header documental) · `node --check` ✔ · chequeo de alcance sin variables libres ✔ · mismos 8 `log.error` y 7 `setSublistValue` que el original · el original no se tocó.
+
+Entraron **12** de los 15 del plan: B1, B2, C1-C3, D1-D7. Afuera con motivo: **B4** (🔴), **B3** y **B5** (ver abajo).
+
+### Unidad 1 — C + D mecánicos (C1, C2, C3, D1, D2, D5, D6, D7)
+
+Sin argumento de equivalencia no trivial: `var`→`const/let` (el `var i` reutilizado en dos loops pasa a un `let` por loop), `getSublistValue` posicional→objeto, `summary` literal→`search.Summary.GROUP`, `createError` + `N/error` + `var name` + comentarios muertos + `return true` fuera, 2 lecturas muertas por línea fuera, logs de dump fuera (**los 8 `log.error` quedan**), `getRubro` sin el parámetro que no usaba, y `COLUMNAS_SS_RUBROS` como único lugar donde está escrito el orden de columnas de las SS (D7: documenta, no robustece — robustecer es B4).
+
+### Unidad 2 — B1, B2, D3
+
+| ID | Qué se hizo | Argumento de equivalencia |
+|---|---|---|
+| ARI-B1 | 4 `filter()` dentro de loops por línea → índices `Map` construidos una vez por llamada (`indexarPrimerMatch`) | El consumidor sólo usaba `[0]` y `length > 0` → "primer match gana" es exactamente `filter(...)[0]`. Clave normalizada con `String()`: mismo riesgo residual que STC-B1/TRS-B1, cerrado ✅ en caracterización. **ARI-A2 se preserva a propósito:** sin match, `resultado` es `undefined` y `resultado.aplicaPublicidad` lanza el mismo `TypeError` (mismo mensaje) que `resultado[0].aplicaPublicidad`. Y el `''` que afterSubmit pasa como array de expensas para `item` sigue pasando: el helper devuelve los no-arrays tal cual, así que `''.get(...)` falla donde fallaba `''.filter(...)` |
+| ARI-B2 | Los 2 `getLineCount` se leen **antes** de las SS. La SS de tax codes corre si hay alguna línea; la de cuentas —y `l598esOneworld()`, que sólo alimenta su filtro— sólo si hay líneas de gasto | Cuando una SS se saltea, sus resultados sólo se usaban en condiciones que ya eran falsas por `cantidad == 0`, y en dos `log.audit` que D5 elimina. Las búsquedas no tienen efectos. En ventas sin `expense` se ahorra **2 búsquedas** por guardado |
+| ARI-D3 | Para gastos **sin** tax code, el segundo filtro por cuenta se saltea | Era la misma clave sobre el mismo array que el primero. Con tax code, la segunda búsqueda sigue y predomina si encuentra, igual que antes |
+
+### Unidad 3 — D4
+
+`afterSubmit` pasó de ~215 a ~70 líneas: el bloque de publicidad (110-222 del original) es `aplicarRubroPublicidad()`. Extracción pura, sin reordenar efectos; las excepciones suben al mismo `catch`. JSDoc de `afterSubmit` (decía "before record is save") y de `setearRubrosIVA` (documentaba `idFieldKey`, que no existe) corregidos.
+
+**Lo que D4 sugería y NO se hizo:** cambiar el `''` de la línea 77 por `[]`. Con `[]`, un ítem sin tax code y con cuenta caería en la rama que **limpia** el rubro; con `''` lanza, aborta el loop y deja la línea intacta. Hoy es inalcanzable en la práctica (las líneas `item` no tienen `account`), pero no es demostrable para todo tipo de registro deployado. Es corrección de comportamiento → va con ARI-A2.
+
+### Dos exclusiones que no estaban en el plan
+
+- **ARI-B3 reclasificado a Grupo A.** Paginar cambia el resultado con >1000 filas. TRS-A7, CRT-A7 y CDF-A4 son el mismo patrón y los tres son 🔴 A (TRS-A7 necesitó aprobación explícita). Va al [registro](../registro-aprobaciones.md).
+- **ARI-B5 bloqueado.** `armarArreglosSS` indexa por **nombre** de columna (`L598 - Utilities.js:250-291`) y este script lee por **posición**; sin la definición de las 2 SS (duda abierta #5) no hay forma de mapear con garantía. Además `.array` toma `[0].value` en multi-select, cosa que `getValue` no hace. Se destraba junto con B4/D7.
+
+### Pendiente
+
+- [ ] Deploy aislado (Status `Testing`, Audience rol de pruebas) — necesita inventario de deployments (duda #3).
+- [ ] Caracterización: Factura de Compra UAT 04, línea por línea, los 6 casos del §6. Antes: confirmar orden de UEs vs `Seteo de Tax Codes` (duda #1).
+- [ ] Medición GU: esperado **leve** ahorro (B2 en ventas; B1 es CPU, no GU). El salto es ARI-A1.
 
 ## 4. Recomendaciones Grupo A
 

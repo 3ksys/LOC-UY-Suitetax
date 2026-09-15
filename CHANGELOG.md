@@ -21,6 +21,7 @@ Leyenda de grupos de hallazgos: **A** correctitud · **B** governance/performanc
 - [Propuesta conjunta STC-A2/A3](docs/propuestas/STC-A2-A3-manejo-error-y-multiples-taxdetails.md) — manejo de error del `save` y múltiples `taxdetails` por línea.
 - [Medición APM](docs/medicion-apm.md) — procedimiento, baseline de governance del original y Fase A-bis con el resultado del híbrido.
 - **Refactor** `L598 - Setear Unidad Indexada_REF.js` — C+D (9 cambios, comportamiento preservado). B1 🔴 y D6 quedan bloqueados por Tekiio; B2 espera `utilities_REF`. Ver [informe §3.bis](docs/refactors/6-setear-unidad-indexada.md#3bis-unidades-aplicadas-2026-09-15).
+- **Refactor** `L598 - Asignar Rubro IVA_REF.js` — B+C+D (12 cambios, comportamiento preservado). ARI-B3 reclasificado a Grupo A; B4 🔴; B5 bloqueado por la definición de las SS. Ver [informe §3.bis](docs/refactors/4-asignar-rubro-iva.md#3bis-unidades-aplicadas-2026-09-15).
 
 ### Cambiado (refactor — comportamiento preservado)
 - **Generación TXT Localizaciones (Sched):**
