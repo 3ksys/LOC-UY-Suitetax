@@ -18,7 +18,8 @@ Cada informe se lee solo. Lo ya aplicado vive en una **bitácora** aparte, para 
 - [2 — Transacción (Servidor)](refactors/2-transaccion-servidor.md) — análisis + **6 unidades aplicadas** sobre el `_REF`.
   - [Bitácora — unidades 1-4](refactors/2-transaccion-servidor-bitacora-unidades-1-4.md) — refactor B/C/D del 2026-08-20 y los tres bugs que atrapó el chequeo de alcance.
   - [Bitácora — unidades 5-6](refactors/2-transaccion-servidor-bitacora-unidades-5-6.md) — TRS-A2 y TRS-A7, Grupo A aprobado el 2026-09-08.
-- [3 — Calcular Retenciones (SS)V2](refactors/3-calcular-retenciones-ss.md) — análisis.
+- [3 — Calcular Retenciones (SS)V2](refactors/3-calcular-retenciones-ss.md) — análisis + **15 cambios B/C/D aplicados** sobre el `_REF`.
+  - [Bitácora de aplicación](refactors/3-calcular-retenciones-ss-bitacora.md) — argumento de equivalencia por ID, verificación medida, 9 sub-funciones extraídas.
 - [4 — Asignar Rubro IVA](refactors/4-asignar-rubro-iva.md) — análisis.
 - [5 — Conexion Directa FE (SS)](refactors/5-conexion-directa-fe-ss.md) — análisis.
   - [Anexo — flujo del tipo de CFE](refactors/5-conexion-directa-fe-ss-anexo-tipo-cfe.md) — evidencia para el error 100000.

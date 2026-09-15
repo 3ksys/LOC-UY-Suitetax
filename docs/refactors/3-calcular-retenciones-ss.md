@@ -3,7 +3,7 @@
 **Script:** `L598 - Calcular Retenciones (SS)V2` · **Archivo:** `LOC UY/L598 - Calcular Retenciones (SS)V2.js` · **LOC:** 2431
 **Tipo:** UserEvent 2.1 · **Entry points declarados (`return{}`, líneas 2425-2429):** `beforeLoad` + `beforeSubmit` + `afterSubmit` → **×3**
 **Módulo:** Retenciones (Compras) · **Toca impuestos:** sí 💰 · **Tiempo medido:** Factura de Compra **5.4s ×3** · Resguardo **0.8s ×3**
-**Estado:** análisis PRE-refactor (ningún cambio aplicado). Sufijo `V2` = versión histórica preexistente, sin relación con `_REF`.
+**Fase:** REFACTOR — **B2, B3, C1-C5 y D2-D9 aplicados el 2026-09-15** en `L598 - Calcular Retenciones (SS)V2_REF.js` (ver [§3.bis](#3bis-unidades-aplicadas--bitácora) y la [bitácora](3-calcular-retenciones-ss-bitacora.md)). El original **nunca** se modifica. Sufijo `V2` = versión histórica preexistente. **Pendiente: deploy aislado y caracterización.**
 
 > Salvo indicación en contrario, toda referencia `N` de línea es de `LOC UY/L598 - Calcular Retenciones (SS)V2.js`.
 
@@ -95,32 +95,36 @@ Es la **cabecera del cálculo de retenciones** (IRPF/IRNR/IRAE/IVA) sobre Factur
 
 ## 3. Plan de Cambios propuesto (solo B/C/D)
 
-Ordenado por criterio #1→#6. Todo en estado ⏳ Propuesto; los 🔴 no se aplican sin aprobación registrada.
+Ordenado por criterio #1→#6. Los 🔴 no se aplican sin aprobación registrada.
 
 | Criterio | ID | Qué se modifica | Riesgo | Estado |
 |---|---|---|:--:|:--:|
 | #2 Governance | CRT-B1 | SS `customsearch_l598_transaction_det_ret` (≥28 col, acceso posicional) → SuiteQL con SELECT específico o columnas nombradas | 🔴 | ⏳ Propuesto |
-| #2 Governance | CRT-B2 | Cachear `esOneworld()` por ejecución; condicionar la llamada incondicional de 2256-2259; `getRange` de existencia → `end:1` | 🟡 | ⏳ Propuesto |
-| #2 Governance | CRT-B3 | Dedup O(n²) → `Set` O(n) en DELETE de Resguardo | 🟡 | ⏳ Propuesto |
-| #3 Performance | CRT-B4 | `save()` completo → `submitFields` de 1 campo en el bloque JSON del Resguardo | 🟡 | ⏳ Propuesto |
-| #3 Performance | CRT-B5 | Consolidar/cachear cascada de búsquedas de configuración del Resguardo (3 lecturas de `datos_impositivos_emp` por flujo) | 🟡 | ⏳ Propuesto |
-| #4 Patrones | CRT-C3 | Eliminar `eval()` en `letras()` (uso directo equivalente) | 🟡 | ⏳ Propuesto |
-| #4 Patrones | CRT-C2 | Firmas posicionales → options object (sin tocar `removeLine` de 2224, reservado a CRT-A11) | 🟢 | ⏳ Propuesto |
-| #4 Patrones | CRT-C4 | Eliminar restos 1.0 comentados y bloques muertos | 🟢 | ⏳ Propuesto |
-| #4 Patrones | CRT-C1 | `var` → `const`/`let` | 🟢 | ⏳ Propuesto |
+| #2 Governance | CRT-B2 | Cachear `esOneworld()` por ejecución; condicionar la llamada incondicional de 2256-2259; `getRange` de existencia → `end:1` | 🟡 | 🔧 Aplicado |
+| #2 Governance | CRT-B3 | Dedup O(n²) → `Set` O(n) en DELETE de Resguardo | 🟡 | 🔧 Aplicado |
+| #3 Performance | CRT-B4 | `save()` completo → `submitFields` de 1 campo en el bloque JSON del Resguardo | 🟡 | ⏳ Excluido (equivalencia de `submitFields` a revisar; ver bitácora) |
+| #3 Performance | CRT-B5 | Consolidar/cachear cascada de búsquedas de configuración del Resguardo (3 lecturas de `datos_impositivos_emp` por flujo) | 🟡 | 🔧 Parcial (solo caché de `esOneworld`; ver bitácora) |
+| #4 Patrones | CRT-C3 | Eliminar `eval()` en `letras()` (uso directo equivalente) | 🟡 | 🔧 Aplicado |
+| #4 Patrones | CRT-C2 | Firmas posicionales → options object (sin tocar `removeLine` de 2224, reservado a CRT-A11) | 🟢 | 🔧 Aplicado |
+| #4 Patrones | CRT-C4 | Eliminar restos 1.0 comentados y bloques muertos | 🟢 | 🔧 Aplicado |
+| #4 Patrones | CRT-C1 | `var` → `const`/`let` | 🟢 | 🔧 Aplicado |
 | #5 Legibilidad | CRT-D1 | Consolidar 4 bloques IRPF/IRNR/IRAE/IVA en helper parametrizado (posteo fiscal: requiere aprobación + caracterización exhaustiva) | 🔴 | ⏳ Propuesto |
-| #5 Legibilidad | CRT-D7 | Extraer sub-funciones de `afterSubmit`/`beforeSubmit` | 🟡 | ⏳ Propuesto |
-| #5 Legibilidad | CRT-D5 | Declarar variables implícitas de `getNumberLiteral` (verificando recursión) | 🟡 | ⏳ Propuesto |
-| #5 Legibilidad | CRT-D2 | Unificar `isEmpty`/`isEmptyOK` | 🟢 | ⏳ Propuesto |
-| #5 Legibilidad | CRT-D3 | Eliminar dead code (254, 1571, 1646, 1670, 952-965) | 🟢 | ⏳ Propuesto |
-| #5 Legibilidad | CRT-D4 | Limpiar logs personales/dump (conservar `log.error`) | 🟢 | ⏳ Propuesto |
-| #5 Legibilidad | CRT-D6 | Renombrar `objRecord` reasignado (1587) | 🟢 | ⏳ Propuesto |
-| #5 Legibilidad | CRT-D8/D9 | Alinear firma `obtenerTipoTransaccionLocal`; simplificar loop de `beforeLoad` preservando semántica "última fila" | 🟢 | ⏳ Propuesto |
-| #6 Reutilización | CRT-C5 | `toFixedOK` prototype → función de módulo (fórmula byte-idéntica) | 🟡 | ⏳ Propuesto |
+| #5 Legibilidad | CRT-D7 | Extraer sub-funciones de `afterSubmit`/`beforeSubmit` | 🟡 | 🔧 Aplicado |
+| #5 Legibilidad | CRT-D5 | Declarar variables implícitas de `getNumberLiteral` (verificando recursión) | 🟡 | 🔧 Aplicado |
+| #5 Legibilidad | CRT-D2 | Unificar `isEmpty`/`isEmptyOK` | 🟢 | 🔧 Aplicado |
+| #5 Legibilidad | CRT-D3 | Eliminar dead code (254, 1571, 1646, 1670, 952-965) | 🟢 | 🔧 Aplicado |
+| #5 Legibilidad | CRT-D4 | Limpiar logs personales/dump (conservar `log.error`) | 🟢 | 🔧 Aplicado |
+| #5 Legibilidad | CRT-D6 | Renombrar `objRecord` reasignado (1587) | 🟢 | 🔧 Aplicado |
+| #5 Legibilidad | CRT-D8/D9 | Alinear firma `obtenerTipoTransaccionLocal`; simplificar loop de `beforeLoad` preservando semántica "última fila" | 🟢 | 🔧 Aplicado |
+| #6 Reutilización | CRT-C5 | `toFixedOK` prototype → función de módulo (fórmula byte-idéntica) | 🟡 | 🔧 Aplicado |
 
 **Matriz de riesgo:** 🔴 2 (CRT-B1, CRT-D1 — requieren aprobación explícita) · 🟡 7 (B2-B5, C3, C5, D5, D7 — revisión conjunta) · 🟢 9.
 
 ---
+
+## 3.bis Unidades aplicadas → [bitácora](3-calcular-retenciones-ss-bitacora.md)
+
+**15 de 18 aplicados el 2026-09-15** (B2, B3, C1-C5, D2-D9) en `L598 - Calcular Retenciones (SS)V2_REF.js`, con 9 sub-funciones extraídas de `afterSubmit`/`beforeSubmit`. El detalle —argumento de equivalencia por ID, verificación medida, exclusiones de B4 y B5 y hallazgos nuevos— vive en la [bitácora de aplicación](3-calcular-retenciones-ss-bitacora.md).
 
 ## 4. Recomendaciones Grupo A (fuera del refactor — requieren aprobación Tekiio)
 
