@@ -98,7 +98,7 @@ Ordenado por criterio del cliente #1→#6. Estado inicial: todo ⏳ Propuesto (p
 | #6 | ARI-D3 | Dedup del doble filtro de expensas | 🟡 | ⏳ Propuesto |
 | #6 | ARI-D6 | Simplificar `getRubro` preservando semántica | 🟢 | ⏳ Propuesto |
 
-**Matriz de riesgo:** 🟢 ×7 (sin aprobación) · 🟡 ×7 (revisión conjunta) · 🔴 ×1 (ARI-B4 — aprobación explícita). Los 🔴 van a [registro-aprobaciones.md](../registro-aprobaciones.md).
+**Matriz de riesgo:** 🟢 ×7 (sin aprobación) · 🟡 ×7 (revisión conjunta) · 🔴 ×1 (ARI-B4 — aprobación explícita). Los 🔴 **y todo el Grupo A** van a [registro-aprobaciones.md](../registro-aprobaciones.md).
 
 ## 4. Recomendaciones Grupo A
 
@@ -108,7 +108,7 @@ Ordenado por criterio del cliente #1→#6. Estado inicial: todo ⏳ Propuesto (p
 - **ARI-A4 — Guard `idRubroIVA` vs valor `rubroIVAEquivalente` en ventas (339 vs 367-371):** validar con datos reales de las SS si existen mapeos con rubro sin equivalente.
 - **ARI-A5 / ARI-A6:** confirmar intencionalidad de `ignoreMandatoryFields:true` (224) y agregar validación del parámetro de publicidad (30).
 
-Todos con estado ⏳ Pendiente en [registro-aprobaciones.md](../registro-aprobaciones.md).
+> 📋 **Registrados (2026-09-15).** `ARI-A1`…`ARI-A6`, más el 🔴 `ARI-B4` del §3, tienen fila propia en [registro-aprobaciones.md](../registro-aprobaciones.md), todos en estado ⏳ Pendiente. **Ninguno se presentó formalmente a Tekiio todavía.** ⚠️ `ARI-A1` no se pide suelto: es parte de la decisión única de entry point junto con `STC-A1`, `TRS-A1` y `CRT-A13`, y además su viabilidad depende de `STC-A1` (ver §5).
 
 ## 5. Dependencias y alcance
 

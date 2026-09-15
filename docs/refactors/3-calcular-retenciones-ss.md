@@ -124,6 +124,8 @@ Ordenado por criterio #1→#6. Todo en estado ⏳ Propuesto; los 🔴 no se apli
 
 ## 4. Recomendaciones Grupo A (fuera del refactor — requieren aprobación Tekiio)
 
+> 📋 **Registrados (2026-09-15).** `CRT-A1`…`CRT-A13`, más los 🔴 `CRT-B1` y `CRT-D1` del §3, tienen fila propia en [registro-aprobaciones.md](../registro-aprobaciones.md), todos en estado ⏳ Pendiente. **Ninguno se presentó formalmente a Tekiio todavía.** ⚠️ `CRT-A13` no se pide suelto: es parte de la decisión única de entry point junto con `STC-A1`, `TRS-A1` y `ARI-A1`.
+
 | ID | Impacto de negocio | Por qué requiere aprobación |
 |---|---|---|
 | CRT-A1 | Hoy se pueden editar Resguardos ya considerados en una URU-Retención sin bloqueo: integridad del encadenamiento fiscal. | Corregir la comparación **activa** una validación que hoy no corre → nuevo comportamiento visible (error ERR002 al usuario). |

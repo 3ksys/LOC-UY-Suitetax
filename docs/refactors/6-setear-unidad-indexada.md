@@ -113,7 +113,7 @@ El hallazgo de mayor valor no es de performance: este script es **el único escr
 - **SUI-A3**: los caminos silenciosos que dejan el campo vacío son los que *siembran* transacciones bloqueables por la validación de arriba. Recomendación: definir con Tekiio si un fallo al obtener el valor debe ser visible (log.error ya existe solo en algunos caminos) y si el fallback de fuente (TAFACE→exchangeRate ante error de SS) es intencional.
 - **SUI-A4**: confirmar la intencionalidad de `ignoreMandatoryFields: true`.
 
-Todos a registrar en [registro-aprobaciones.md](../registro-aprobaciones.md) con estado ⏳ Pendiente (metodología §9).
+> 📋 **Registrados (2026-09-15).** `SUI-A1`…`SUI-A4`, más el 🔴 `SUI-B1` del §3, tienen fila propia en [registro-aprobaciones.md](../registro-aprobaciones.md), todos en estado ⏳ Pendiente (metodología §9). **Ninguno se presentó formalmente a Tekiio todavía.** `SUI-A2` es el de mayor valor del lote: es el que explica UAT-12.
 
 ## 5. Dependencias y alcance
 
