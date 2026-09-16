@@ -62,6 +62,13 @@
  *   NO se tocaron los 4 bloques IRPF/IRNR/IRAE/IVA (CRT-D1, 🔴): solo
  *   recibieron los cambios mecanicos C1/C5/D4.
  *
+ * DESVIO DE DEPLOY (no de refactor): los IDs de parametro de script son unicos
+ * en la cuenta y pertenecen al Script record ORIGINAL; el _REF no puede
+ * declararlos (verificado 2026-09-16: "This custom field already exists").
+ * El _REF lee sus parametros por constantes PARAM_* con sufijo _ref. El dia que
+ * este archivo reemplace al original, volver los valores de esas constantes a
+ * los IDs originales. Ver docs/carga-y-deploy-de-scripts.md.
+ *
  * Fuera de este refactor, con motivo:
  *   B1 (SuiteQL para customsearch_l598_transaction_det_ret) y D1 (helper
  *   parametrizado de los 4 bloques de posteo fiscal): 🔴, requieren aprobacion.
@@ -78,6 +85,10 @@
  * ============================================================================
  */
 define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/url", "N/https"], function (log, record, search, runtime, error, format, url, https) {
+  // DESVÍO DE DEPLOY: IDs originales 'custscript_l598_calc_ret_ss_pfp2' y
+  // 'custscript_l598_calc_ret_val_resgret'. Ver header.
+  const PARAM_PROCESAR_PENDIENTES_APROBACION = 'custscript_l598_calc_ret_ss_pfp2_ref';
+  const PARAM_VALIDAR_RESGUARDO_RETENCION = 'custscript_l598_calc_ret_val_resgret_ref';
   /*global define */
   /* eslint-disable no-magic-numbers */
   function isEmpty(value) {
@@ -491,7 +502,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
   function sePermiteProcesarEnFacturaPendiente() {
     const currScript = runtime.getCurrentScript();
     const rta = currScript.getParameter({
-      name: "custscript_l598_calc_ret_ss_pfp2"
+      name: PARAM_PROCESAR_PENDIENTES_APROBACION
     });
     return convertToBoolean(rta);
   }
@@ -2131,7 +2142,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
     const recType = objRecord.type;
     const currentScript = runtime.getCurrentScript(); //nlapiGetContext();
     const paramEjecutarValidacion = currentScript.getParameter({
-      name: "custscript_l598_calc_ret_val_resgret"
+      name: PARAM_VALIDAR_RESGUARDO_RETENCION
     });
     log.debug("beforeSubmit", "paramEjecutarValidacion: " + paramEjecutarValidacion);
     const tranVinculada = objRecord.getValue("custbody_l598_resguardo_fact_vinculada");

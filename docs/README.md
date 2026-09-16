@@ -8,6 +8,7 @@ Localización fiscal Uruguay para NetSuite (SuiteTax). Proyecto de refactor de S
 - [Plan de refactor](plan-refactor.md) — objetivo, alcance, fases, priorización, estado y descubrimientos.
 - [Metodología de refactor](metodologia-refactor.md) — el proceso estándar por script (el "molde" que se replica en los 73 scripts).
 - [Carga y deploy de scripts en NetSuite](carga-y-deploy-de-scripts.md) — procedimiento operativo: File Cabinet, script record, deployment aislado y verificación.
+- [Plan de pruebas 2026-09-16](plan-pruebas-2026-09-16.md) — checklist de un día para caracterizar los 6 `_REF`: deploy aislado, 4 casos UAT, qué comparar y las 3 reglas que invalidan una corrida.
 
 ### Informes por script (análisis y refactor)
 - [Resumen ejecutivo — 6 scripts críticos](resumen-analisis-scripts-criticos.md) — estado, patrones sistémicos y pedidos a Tekiio. **El documento para compartir.**

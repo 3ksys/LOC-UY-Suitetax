@@ -84,6 +84,7 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 
 ### Pendiente
 
+- [x] **Desvío de deploy (2026-09-16):** los IDs de parámetro no se pueden duplicar en la cuenta; el `_REF` los lee por constantes `PARAM_*` con sufijo `_ref`. Revertir al reemplazar al original. Regla en [carga y deploy §3.bis](../carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios).
 - [ ] Deploy aislado (Status `Testing`, Audience rol de pruebas) — necesita inventario de deployments (duda #7).
 - [ ] Caracterización: los 7 casos del §6, con **UAT Compras 04** como primario. Regla: elegir casos donde CRT-A3/A8 no se disparen.
 - [ ] Medición GU: esperado ahorro **modesto** — 1 búsqueda por guardado de cualquier tipo (B2c) y las repetidas de `esOneworld` en Resguardo. El salto grande es B1 (🔴) y A13.

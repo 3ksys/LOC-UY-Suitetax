@@ -36,6 +36,13 @@
  *       getConfigUnidadIndexada devuelva '' (como el original). Los títulos de
  *       los log.error se pasan por parámetro y quedan idénticos.
  *
+ * DESVIO DE DEPLOY (no de refactor): los IDs de parametro de script son unicos
+ * en la cuenta y pertenecen al Script record ORIGINAL; el _REF no puede
+ * declararlos (verificado 2026-09-16: "This custom field already exists").
+ * El _REF lee sus parametros por constantes PARAM_* con sufijo _ref. El dia que
+ * este archivo reemplace al original, volver los valores de esas constantes a
+ * los IDs originales. Ver docs/carga-y-deploy-de-scripts.md.
+ *
  * Pendientes de este script:
  *   D6  columnas de SS por nombre — bloqueado por duda abierta #3.
  *   B1  SS -> SuiteQL/N/cache — 🔴 requiere aprobación de Tekiio.
@@ -49,6 +56,10 @@ define(['N/record', 'L598/utilities', 'N/runtime', 'N/currency'],
 
         const proceso = "Setear Unidad Indexada";
 
+        // DESVÍO DE DEPLOY: el ID original es 'custscript_l598_set_ui_tipo_in_fe_taface'
+        // (List/Record → URU-Tipo Integración). Ver header.
+        const PARAM_TIPO_INTEGRACION_FE = 'custscript_l598_set_ui_tipo_fe_ref';
+
         function afterSubmit(scriptContext) {
 
             const currScript = runtime.getCurrentScript();
@@ -57,7 +68,7 @@ define(['N/record', 'L598/utilities', 'N/runtime', 'N/currency'],
 
                 if (scriptContext.type === 'create' || scriptContext.type === 'edit') {
 
-                    const parametroTipoIntegracionFE = currScript.getParameter('custscript_l598_set_ui_tipo_in_fe_taface');
+                    const parametroTipoIntegracionFE = currScript.getParameter(PARAM_TIPO_INTEGRACION_FE);
 
                     // Get Data From Transaction
                     const recId = scriptContext.newRecord.id;

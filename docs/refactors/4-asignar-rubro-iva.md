@@ -131,6 +131,7 @@ Sin argumento de equivalencia no trivial: `var`→`const/let` (el `var i` reutil
 
 ### Pendiente
 
+- [x] **Desvío de deploy (2026-09-16):** los IDs de parámetro no se pueden duplicar en la cuenta; el `_REF` los lee por constantes `PARAM_*` con sufijo `_ref`. Revertir al reemplazar al original. Regla en [carga y deploy §3.bis](../carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios).
 - [ ] Deploy aislado (Status `Testing`, Audience rol de pruebas) — necesita inventario de deployments (duda #3).
 - [ ] Caracterización: Factura de Compra UAT 04, línea por línea, los 6 casos del §6. Antes: confirmar orden de UEs vs `Seteo de Tax Codes` (duda #1).
 - [ ] Medición GU: esperado **leve** ahorro (B2 en ventas; B1 es CPU, no GU). El salto es ARI-A1.

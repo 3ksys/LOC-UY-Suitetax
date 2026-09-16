@@ -186,6 +186,28 @@ Campos a definir:
 
 ⚠️ **Un UserEvent no se aísla solo con el rol** — se dispara por evento del registro. El aislamiento real lo da la combinación `Status = Testing` + **Audience** restringida.
 
+## 3.bis Parámetros de script: el `_REF` necesita IDs propios
+
+> 🔴 **Verificado en la cuenta el 2026-09-16.** Al crear en el Script record del `_REF` un parámetro con el mismo ID que el original (`custscript_l598_set_ui_tipo_in_fe_taface`), NetSuite responde **"This custom field already exists"**. Los IDs `custscript_*` son únicos en la cuenta y pertenecen al Script record que los creó; `runtime.getCurrentScript().getParameter()` solo ve los parámetros del script que está ejecutando. **No hay forma de que el `_REF` lea el parámetro del original.**
+
+Consecuencia: si el `_REF` se deploya sin parámetro, `getParameter` devuelve `null` y el script toma otro camino que el original — la caracterización compararía dos comportamientos distintos sin que nadie lo note. STC no lo mostró porque no tiene parámetros.
+
+**Regla:**
+
+1. El `_REF` declara sus IDs de parámetro en **constantes `PARAM_*` al inicio del archivo**, con sufijo `_ref` y un comentario `DESVÍO DE DEPLOY` que nombra el ID original. Es un cambio de deploy, no de refactor: no altera el comportamiento comparado.
+2. En el Script record del `_REF`, cada parámetro se crea con **`New Parameter`** (el formulario completo; el editor en línea de la sublista trunca ID y label) con el ID `_ref`, y **mismo Type, List/Record y Preference** que el original.
+3. En cada deployment del `_REF` se carga el **mismo valor** que tiene el deployment original correspondiente.
+4. El día que el `_REF` reemplace al original, **volver las constantes a los IDs originales**. Está anotado en el header de cada archivo y en su bitácora.
+
+| Script | ID original | ID en el `_REF` | Tipo |
+|---|---|---|---|
+| Setear Unidad Indexada | `custscript_l598_set_ui_tipo_in_fe_taface` | `custscript_l598_set_ui_tipo_fe_ref` | List/Record → URU-Tipo Integración |
+| Asignar Rubro IVA | `custscript_l598_rubro_publicidad` | `custscript_l598_rubro_publicidad_ref` | copiar del original |
+| Calcular Retenciones (SS)V2 | `custscript_l598_calc_ret_ss_pfp2` | `custscript_l598_calc_ret_ss_pfp2_ref` | copiar del original |
+| Calcular Retenciones (SS)V2 | `custscript_l598_calc_ret_val_resgret` | `custscript_l598_calc_ret_val_resgret_ref` (40 justos) | copiar del original |
+
+Límite: el ID completo no puede pasar de 40 caracteres (`custscript_` son 11).
+
 ## 4. Verificación
 
 1. Abrir el Script Deployment guardado y confirmar: `Status = Testing`, `Deployed` tildado, `Applies To` correcto y en **Internal Roles** únicamente `URU-Contador Suitetax (Mobeats)` (con `ALL INTERNAL ROLES` **destildado**).

@@ -121,6 +121,7 @@ Dos comparaciones cambiaron de `==` a `===` con normalización `String()`. Equiv
 
 ### Pendiente
 
+- [x] **Desvío de deploy (2026-09-16):** los IDs de parámetro no se pueden duplicar en la cuenta; el `_REF` los lee por constantes `PARAM_*` con sufijo `_ref`. Revertir al reemplazar al original. Regla en [carga y deploy §3.bis](../carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios).
 - [ ] Deploy aislado del `_REF` (Status `Testing`, Audience rol de pruebas) — necesita el inventario de deployments del original (duda abierta #1).
 - [ ] Caracterización: Orden de Venta (caso baseline, 0.8s) en las dos ramas — con config TAFACE y sin ella — comparando `custbody_l598_valor_unidad_indexada` original vs `_REF`.
 - [ ] Medición GU: se espera **sin cambio** en esta unidad (las 2 SS y `l598esOneworld` siguen ejecutándose; el ahorro real está en B1/B2, que están bloqueados).

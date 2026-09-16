@@ -47,6 +47,13 @@
  *       borde (ítem sin tax code y con cuenta), hoy inalcanzable en la
  *       práctica pero no demostrable para todo tipo de registro. Va con ARI-A2.
  *
+ * DESVIO DE DEPLOY (no de refactor): los IDs de parametro de script son unicos
+ * en la cuenta y pertenecen al Script record ORIGINAL; el _REF no puede
+ * declararlos (verificado 2026-09-16: "This custom field already exists").
+ * El _REF lee sus parametros por constantes PARAM_* con sufijo _ref. El dia que
+ * este archivo reemplace al original, volver los valores de esas constantes a
+ * los IDs originales. Ver docs/carga-y-deploy-de-scripts.md.
+ *
  * Fuera de este refactor, con motivo:
  *   B3  paginar las 2 búsquedas ad-hoc: cambia el resultado con >1000 filas.
  *       Es el mismo patrón que TRS-A7 / CRT-A7 / CDF-A4, todos Grupo A ->
@@ -64,6 +71,9 @@ define(
         'N/record', 'N/search', 'L598/utilities', 'N/runtime'
     ],
     function (record, search, utilities, runtime) {
+
+        // DESVÍO DE DEPLOY: el ID original es 'custscript_l598_rubro_publicidad'. Ver header.
+        const PARAM_RUBRO_PUBLICIDAD = 'custscript_l598_rubro_publicidad_ref';
 
         /**
          * ARI-D7 — Contrato posicional de las 2 saved searches de mapeo
@@ -128,7 +138,7 @@ define(
             const recId = scriptContext.newRecord.id;
             const recType = scriptContext.newRecord.type;
             const script = runtime.getCurrentScript();
-            const rubroPublicidad = script.getParameter("custscript_l598_rubro_publicidad");
+            const rubroPublicidad = script.getParameter(PARAM_RUBRO_PUBLICIDAD);
 
             try {
 
@@ -201,7 +211,7 @@ define(
          * @param {Record} objRecord - registro cargado en afterSubmit
          * @param {string} recType
          * @param {number|string} recId
-         * @param {string} rubroPublicidad - custscript_l598_rubro_publicidad
+         * @param {string} rubroPublicidad - parámetro PARAM_RUBRO_PUBLICIDAD (original: custscript_l598_rubro_publicidad)
          */
         function aplicarRubroPublicidad(objRecord, recType, recId, rubroPublicidad) {
 
