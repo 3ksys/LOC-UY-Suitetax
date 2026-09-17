@@ -169,3 +169,20 @@ Las dos funciones nuevas usaban `recType` sin recibirlo como parámetro. A difer
 
 **Conclusión de método:** en un refactor que mueve código programáticamente, `node --check` verifica que el archivo *parsea*, no que *funciona*. El chequeo que sirve es el de alcance: para cada función, calcular sus locales (declaraciones + parámetros + destructuring) y buscar referencias a variables que ya no estén en su scope, excluyendo accesos a propiedad. Es lo único que atrapó los tres.
 
+### El cuarto bug — el que atrapó la prueba de humo, no el chequeo (2026-09-17)
+
+Primer guardado de una Orden de Venta con el `_REF` deployado en `Testing`:
+
+```
+ReferenceError: idTransaccion is not defined [beforeSubmit, L598 -Transacción (Servidor)_REF.js:1952:59]
+```
+
+**Qué pasó.** La extracción de TRS-D4 sacó los dos bloques de borrado (`vendorcredit` y `URU-Resguardo` en DELETE) a `borrarRetencionesDeVendorCredit(...)` y `borrarRetencionesDeResguardo(...)`, y les dio un parámetro `idTransaccion` que **ninguna de las dos usa** — los bloques originales (1132-1195) nunca lo leían. En el call site se pasa `idTransaccion`, que es un `let` declarado **dentro** del `if (CREATE || EDIT)` de arriba (1824): con `var` habría sido visible en toda la función por hoisting; con `let` no existe fuera del `if`. Un `salesorder` entra al `if`, cae al `catch`, el `if` cierra, y la línea 1952 revienta.
+
+**Por qué ningún chequeo lo vio.** `node --check` mira sintaxis. El chequeo de alcance (`scopecheck.py`) busca identificadores que *ningún* scope declara — e `idTransaccion` sí está declarado, solo que en el bloque equivocado. Era un punto ciego conocido en teoría (se documentó al hacer CDF-C1 y por eso ahí solo se convirtieron 267 de 397 `var`) y desconocido en la práctica: en TRS, C1 se aplicó sin esa regla el 2026-08-20 y este caso se coló.
+
+**Fix.** Quitar el parámetro muerto de las dos firmas y las dos llamadas. Devuelve el código exactamente al original: los cuerpos extraídos siguen `diff -w` idénticos a los bloques 1132-1161 y 1166-1195. Sin cambio de comportamiento salvo que ahora no explota.
+
+**Lo que cambia en el procedimiento.** Nuevo chequeo `tools/blockscope.py`: `let`/`const` declarados en un bloque y usados fuera de él en la misma función. Validado como control positivo sobre esta versión del `_REF` (marca 1952 y 1957) y corrido sobre los seis `_REF`: limpio. Entra al paso 4 de la [metodología](../metodologia-refactor.md#4-flujo-por-script) junto con `scopecheck.py`, ambos ahora en `tools/`.
+
+**De paso:** `scopecheck.py` sobre este `_REF` marca 26 variables libres en `getNumberLiteral` (`cdata, m1..m3, mdata, mldata, pred, r1..r8, rm0..rm3, s, tmp*`). Son del original — el mismo bloque de monto en letras que en CRT se cerró con CRT-D5 — y no las tocó ninguna unidad. Candidato **TRS-D8** para una unidad futura, con el mismo análisis de recursión que se hizo allá.

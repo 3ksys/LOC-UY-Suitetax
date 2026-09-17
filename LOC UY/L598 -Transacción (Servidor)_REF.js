@@ -1735,7 +1735,7 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
      * que se apruebe, el arreglo sea un diff aislado y no venga mezclado con este
      * movimiento de codigo.
      */
-    function borrarRetencionesDeVendorCredit(context, objRecord, idTransaccion, recType) {
+    function borrarRetencionesDeVendorCredit(context, objRecord, recType) {
 
     // INICIO - Aplica solo a vendor credit sin tocar taxcodes
     if (context.type == context.UserEventType.DELETE && recType == "vendorcredit") {
@@ -1774,7 +1774,7 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
      * TRS-D4 — Rama DELETE de URU-Resguardo. Extraida tal cual.
      * ⚠️ Mismo TRS-A3 que la funcion anterior, con el otro registro de retenciones.
      */
-    function borrarRetencionesDeResguardo(context, objRecord, idTransaccion, recType) {
+    function borrarRetencionesDeResguardo(context, objRecord, recType) {
 
     // INICIO - Aplica solo a resguardo sin tocar taxcodes
     if (context.type == context.UserEventType.DELETE && recType == "customtransaction_l598_resguardo") {
@@ -1949,12 +1949,12 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
       }
 
 
-      borrarRetencionesDeVendorCredit(context, objRecord, idTransaccion, recType);
+      borrarRetencionesDeVendorCredit(context, objRecord, recType);
 
       // FIN - Aplica solo a vendor credit sin tocar taxcodes
 
 
-      borrarRetencionesDeResguardo(context, objRecord, idTransaccion, recType);
+      borrarRetencionesDeResguardo(context, objRecord, recType);
       // FIN - Aplica solo a resguardo sin tocar taxcodes
 
     }

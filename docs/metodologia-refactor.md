@@ -38,7 +38,7 @@ Este documento define **cómo** se refactoriza cada uno de los 73 scripts. Es el
 1. ANÁLISIS      → leer script + dependencias → reporte de hallazgos (grupos A/B/C/D + riesgo)
 2. ACUERDO       → definir alcance del refactor (qué grupos, qué queda como recomendación)
 3. REFACTOR      → crear <script>_REF.js (original intacto) → aplicar B/C/D
-4. VERIF. LOCAL  → node --check (sintaxis) + revisión manual de identidad de comportamiento
+4. VERIF. LOCAL  → node --check (sintaxis) + tools/scopecheck.py (variables libres) + tools/blockscope.py (let/const fuera de su bloque) + revisión manual de identidad de comportamiento
 5. DEPLOY AISLADO→ subir _REF a la cuenta con Status=Testing + Audience del rol de pruebas
 6. CARACTERIZAR  → ejecutar original vs _REF (mismo caso) → comparar output byte-a-byte
 7. MEDIR         → registrar GU y tiempo de ambas versiones

@@ -55,6 +55,8 @@ Otros dos gotchas del mismo bloque: el campo ID de Script y de Deployment **ya t
 
 ### Verificación del bloque (antes de las 10)
 
+> 🔴 **Resultado del humo (2026-09-17):** el primer guardado de una Orden de Venta falló con `ReferenceError: idTransaccion is not defined` en `Transacción (Servidor)_REF.js:1952`. Bug de la extracción TRS-D4 del 20/08 (parámetro muerto pasado fuera de su bloque `let`), invisible para `node --check` y para el chequeo de variables libres. Corregido, verificado con el nuevo `tools/blockscope.py` y commiteado; **re-subir el archivo al File Cabinet antes de repetir el humo.** Detalle en la [bitácora](refactors/2-transaccion-servidor-bitacora-unidades-1-4.md#el-cuarto-bug--el-que-atrapó-la-prueba-de-humo-no-el-chequeo-2026-09-17).
+
 - [ ] 4 Script records creados con archivo `_REF`, `node --check` ya pasó en el repo.
 - [ ] 9 deployments en `Testing`, IDs según la tabla, parámetros cargados.
 - [ ] Rol activo = `URU-Contador Suitetax (Mobeats)`.
