@@ -25,7 +25,7 @@ Procedimiento por script: [carga y deploy §1-§4](carga-y-deploy-de-scripts.md#
 | 1 | `L598 - Setear Unidad Indexada_REF.js` | `REF - L598 - Setear Unidad Indexada` | `customscript_l598_setear_unidad_indexada_ref` | `customdeploy_l598_sui_ref_salesorder` |
 | 2 | `L598 - Asignar Rubro IVA_REF.js` | `REF - L598 - Asignar Rubro IVA` | `customscript_l598_asignar_rubro_iva_ref` | `customdeploy_l598_ari_ref_vendorbill` · `_vendorcredit` |
 | 3 | `L598 -Transacción (Servidor)_REF.js` | `REF - L598 - Transaccion (Servidor)` | `customscript_l598_transaccion_servidor_ref` | `customdeploy_l598_trs_ref_vendorbill` · `_vendorcredit` · `_salesorder` |
-| 4 | `L598 - Calcular Retenciones (SS)V2_REF.js` | `REF - L598 - Calcular Retenciones (SS)V2` (40 justos) | `customscript_l598_calcular_retenciones_ss_v2_ref` | `customdeploy_l598_crt_ref_vendorbill` · `_vendorcredit` · `_resguardos` (`customtransaction_l598_resguardos`) |
+| ~~4~~ | ~~`L598 - Calcular Retenciones (SS)V2_REF.js`~~ | **NO SE DEPLOYA** | — | 🔴 **El original está `INACTIVE` en la cuenta** (verificado 17/09, bundle 475567). Sin baseline no hay caracterización posible, y activar un script del bundle es decisión de Tekiio. Los Casos A y B pierden la parte de retenciones; el resto sigue válido |
 
 SUI va primero **a propósito**: es el más chico y tiene parámetro de script — sirve para descubrir el problema de abajo con el menor costo.
 

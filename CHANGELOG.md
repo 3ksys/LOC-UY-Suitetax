@@ -25,6 +25,7 @@ Leyenda de grupos de hallazgos: **A** correctitud · **B** governance/performanc
 - **Refactor** `L598 - Calcular Retenciones (SS)V2_REF.js` — B+C+D (15 cambios, comportamiento preservado; los 4 bloques de posteo fiscal solo reciben cambios mecánicos). B1 y D1 🔴; B4 excluido; B5 parcial. Ver [bitácora](docs/refactors/3-calcular-retenciones-ss-bitacora.md).
 - **Refactor** `L598 - Conexion Directa FE (SS)_REF.js` — B+C+D (10 completos + C1/D3 parciales, comportamiento preservado). 4362 → 4048 líneas: 4 funciones muertas y bloques comentados fuera. B1, B5, D1 🔴; B2 excluido (tipos de campo); D5 reclasificado a corrección; B7 espera `utilities_REF`. Ver [bitácora](docs/refactors/5-conexion-directa-fe-ss-bitacora.md).
 - **Desvío de deploy en los `_REF` con parámetros** (SUI, ARI, CRT): NetSuite no permite duplicar IDs `custscript_*`; cada `_REF` lee sus parámetros por constantes `PARAM_*` con sufijo `_ref`, a revertir al reemplazar al original. Ver [carga y deploy §3.bis](docs/carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios).
+- **Hallazgo de deploy (2026-09-17):** `L598 - Calcular Retenciones (SS)V2` está **INACTIVO** en la cuenta (Script record `customscript_l598_calcular_ret_ss_v2`, bundle 475567). El cálculo lo ejecuta `L598 - Calcular Ret. Lineas (SS)`, otro script con otro archivo. Cierra la duda #1 del informe de CRT y abre la #2: ¿código muerto o reemplazado? El `_REF` no se deploya.
 
 ### Cambiado (refactor — comportamiento preservado)
 - **Generación TXT Localizaciones (Sched):**

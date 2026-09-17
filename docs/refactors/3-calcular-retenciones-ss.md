@@ -5,6 +5,10 @@
 **Módulo:** Retenciones (Compras) · **Toca impuestos:** sí 💰 · **Tiempo medido:** Factura de Compra **5.4s ×3** · Resguardo **0.8s ×3**
 **Fase:** REFACTOR — **B2, B3, C1-C5 y D2-D9 aplicados el 2026-09-15** en `L598 - Calcular Retenciones (SS)V2_REF.js` (ver [§3.bis](#3bis-unidades-aplicadas--bitácora) y la [bitácora](3-calcular-retenciones-ss-bitacora.md)). El original **nunca** se modifica. Sufijo `V2` = versión histórica preexistente. **Pendiente: deploy aislado y caracterización.**
 
+> 🔴 **Este script está INACTIVO en la cuenta — verificado el 2026-09-17.** Su Script record `customscript_l598_calcular_ret_ss_v2` (nombre en cuenta: `L598 - Calcular Retenciones (SS)`, del **bundle 475567**) figura marcado `INACTIVE` y por eso no aparece en el listado de Scripts sin tildar *Show Inactives*. **No corre.** El cálculo de retenciones de esta cuenta lo ejecuta hoy `L598 - Calcular Ret. Lineas (SS)` (`customscript_l598_calc_ret_lineas_2_1_ss`), que es **otro Script record con otro archivo** y parámetros casi homónimos (`custscript_l598_calc_ret_ss_pfp`, `custscript_l598_calcular_ret_val_resgret` — sin el `2`, con `calcular` en vez de `calc`).
+>
+> **Consecuencia:** el `_REF` no se puede caracterizar (no hay baseline: el original no ejecuta) y **no se deploya**. Reactivar un script del bundle es cambio de comportamiento de la cuenta → decisión de Tekiio, no de una jornada de pruebas. El refactor queda escrito, verificado y commiteado, válido el día que se defina el destino del script. Ver duda abierta #1.
+
 > Salvo indicación en contrario, toda referencia `N` de línea es de `LOC UY/L598 - Calcular Retenciones (SS)V2.js`.
 
 ---
@@ -190,11 +194,12 @@ Regla de la metodología §7: elegir casos donde los bugs del Grupo A **no se di
 
 ## 7. Dudas abiertas
 
-1. **¿Qué script de la cuenta es "L598 - Calcular Ret. Lineas (SS)"?** Ninguna referencia con ese nombre en este script; entregar a Tekiio la tabla de §5 y pedir el mapeo Script record ↔ archivo.
-2. **Falta `L598 - Calcular Retenciones (LIBS)V2.js` en el repo** (referenciado en 909): pedir el archivo — sin él no se puede analizar ni refactorizar el flujo manual del botón.
-3. ¿Quién setea `custbody_l598_cal_ret_auto`? (¿formulario, workflow, otro script?) — define cuándo se dispara el flujo automático.
-4. ¿La validación ERR002 funcionó alguna vez? (CRT-A1) ¿Hay expectativa funcional de que bloquee la edición de Resguardos?
-5. Confirmar en logs de la cuenta los errores esperados por CRT-A2 ("Ocurrio un error al borrar URU-Retencion Detalle…") y CRT-A11, para convertir las inferencias de runtime en hechos.
-6. La SS `customsearch_l598_transaction_det_ret`, ¿devuelve siempre 1 fila por transacción? `beforeLoad` decide con la última fila y `afterSubmit` con la primera (CRT-D9) — con >1 fila podrían decidir distinto.
-7. Inventariar los deployments reales del script en la cuenta (tipos de registro y contextos) antes de crear los del `_REF`.
-8. Para UAT 05 (Resguardo observado por CAE): confirmar con Tekiio el caso alternativo para caracterizar creación de Resguardo sin re-guardar el observado.
+1. ✅ **CERRADA (2026-09-17) — "L598 - Calcular Ret. Lineas (SS)" es otro script, y éste está inactivo.** Verificado en la cuenta: `customscript_l598_calc_ret_lineas_2_1_ss` es un Script record propio, activo, con archivo propio y parámetros `custscript_l598_calc_ret_ss_pfp` / `custscript_l598_calcular_ret_val_resgret`. El de este informe, `customscript_l598_calcular_ret_ss_v2` (bundle 475567), está `INACTIVE`. No era un alias ni un nombre de cuenta distinto: son dos scripts.
+2. 🔴 **NUEVA — ¿`(SS)V2` es código muerto o fue reemplazado por `Ret. Lineas`?** De la respuesta depende el destino de las 2.431 líneas analizadas y de los 15 cambios ya aplicados en el `_REF`: si fue reemplazado, el esfuerzo de refactor debería apuntar a `L598 - Calcular Ret. Lineas (SS)`, y los 13 hallazgos del Grupo A hay que re-verificarlos contra **ese** archivo (que no está en el repo: pedirlo junto con el `(LIBS)V2`). **Es el pedido más importante que sale de la jornada de pruebas.**
+3. **Falta `L598 - Calcular Retenciones (LIBS)V2.js` en el repo** (referenciado en 909): pedir el archivo — sin él no se puede analizar ni refactorizar el flujo manual del botón.
+4. ¿Quién setea `custbody_l598_cal_ret_auto`? (¿formulario, workflow, otro script?) — define cuándo se dispara el flujo automático.
+5. ¿La validación ERR002 funcionó alguna vez? (CRT-A1) ¿Hay expectativa funcional de que bloquee la edición de Resguardos?
+6. Confirmar en logs de la cuenta los errores esperados por CRT-A2 ("Ocurrio un error al borrar URU-Retencion Detalle…") y CRT-A11, para convertir las inferencias de runtime en hechos.
+7. La SS `customsearch_l598_transaction_det_ret`, ¿devuelve siempre 1 fila por transacción? `beforeLoad` decide con la última fila y `afterSubmit` con la primera (CRT-D9) — con >1 fila podrían decidir distinto.
+8. Inventariar los deployments reales del script en la cuenta (tipos de registro y contextos) antes de crear los del `_REF`.
+9. Para UAT 05 (Resguardo observado por CAE): confirmar con Tekiio el caso alternativo para caracterizar creación de Resguardo sin re-guardar el observado.
