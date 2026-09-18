@@ -6,7 +6,7 @@
 **Toca impuestos:** sin marca 💰 en el ranking — pero el campo que escribe alimenta una **validación fiscal DGI** (umbral 5000 UI para e-Tickets), relevancia indirecta alta
 **Tiempo medido:** 0.8s ×1 en Orden de Venta · 0.7s en Ejecución Artículo/Remito · 0.2s en Resguardo ([flujos](../flujos-prueba-y-plan-ejecucion.md#3-mapeo-operación--scripts--tiempo-real-baseline-medido))
 
-**Fase:** REFACTOR — **C1-C4 y D1-D5 aplicados el 2026-09-15** en `L598 - Setear Unidad Indexada_REF.js` (ver [§3.bis](#3bis-unidades-aplicadas-2026-09-15)). El original **nunca** se modifica. Análisis con cobertura total (156/156 líneas) + dependencias del `define`. **Pendiente: deploy aislado y caracterización.**
+**Fase:** REFACTOR — **C1-C4 y D1-D5 aplicados el 2026-09-15** en `L598 - Setear Unidad Indexada_REF.js` (ver [§3.bis](#3bis-unidades-aplicadas-2026-09-15)). El original **nunca** se modifica. Análisis con cobertura total (156/156 líneas) + dependencias del `define`. **Deployado en `salesorder` y caracterizado parcialmente el 2026-09-17** (rama TAFACE; 1 record op, 60 GU, 6 búsquedas — [resultados](../caracterizacion/ola-3-6-pruebas-2026-09-17.md)). Pendiente: rama `exchangeRate` y corrida del original el mismo día.
 
 ---
 
