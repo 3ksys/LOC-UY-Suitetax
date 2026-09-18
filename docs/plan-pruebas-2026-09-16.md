@@ -59,7 +59,7 @@ Otros dos gotchas del mismo bloque: el campo ID de Script y de Deployment **ya t
 
 - [ ] 4 Script records creados con archivo `_REF`, `node --check` ya pasó en el repo.
 - [ ] 9 deployments en `Testing`, IDs según la tabla, parámetros cargados.
-- [ ] Rol activo = `URU-Contador Suitetax (Mobeats)`.
+- [x] Rol activo = `URU-Contador Suitetax (Mobeats)`. **Humo y Prueba 1 cerradas el 2026-09-17** — resultados en [caracterización ola 3-6](caracterizacion/ola-3-6-pruebas-2026-09-17.md).
 - [ ] Un guardado de humo en una **Orden de Venta nueva** → en Script Execution Logs aparecen `customscript_l598_setear_unidad_indexada_ref` y `customscript_l598_transaccion_servidor_ref`, y **no** `L598 - Setear Unidad Indexada` ni `L598 -Transacción (Servidor)`.
 
 ---

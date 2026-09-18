@@ -39,6 +39,7 @@ Cada informe se lee solo. Lo ya aplicado vive en una **bitácora** aparte, para 
 
 ### Caracterización y medición
 - [Seteo de Tax Codes](caracterizacion/1-seteo-de-tax-codes.md) — plan de captura original vs `_REF`, procedimiento en la cuenta, plantillas CSV y evidencia de las corridas.
+- [Ola 3-6 — pruebas del 2026-09-17](caracterizacion/ola-3-6-pruebas-2026-09-17.md) — deploy aislado de SUI/ARI/TRS, humo, Prueba 1 en Orden de Venta: TRS-A2 medido 2 → 0 record ops; SUI 60 GU / 6 búsquedas.
 - [Medición APM](medicion-apm.md) — cómo medir tiempo y governance en la cuenta, baseline del original y resultados del híbrido.
 
 ### Pilotos
