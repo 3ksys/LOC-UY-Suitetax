@@ -116,7 +116,7 @@ Anatomía del costo del `afterSubmit` (explica los 11-21s medidos): `record.load
 | #3 Performance | CDF-B6 | Quitar `log.debug` por línea del loop y `JSON.stringify` de objetos grandes (conservar `log.error`) | 🟢 | 🔧 Aplicado |
 | #4 Patrones | CDF-C4 | Eliminar `N/error` del `define`; `N/transaction` cae con CDF-D2 | 🟢 | 🔧 Aplicado |
 | #4 Patrones | CDF-C3 | `toFixedOK`: de prototype a función de módulo, fórmula intacta | 🟡 | 🔧 Aplicado |
-| #4 Patrones | CDF-C5 | Limpiar `parseFloat(x,10)`/`parseInt(10,10)` (radix inerte) | 🟢 | 🔧 Aplicado |
+| #4 Patrones | CDF-C5 | Limpiar `parseFloat(x,10)` (radix inerte): **356** sitios en código vivo = **209** directos + **147** con paréntesis anidados. `parseInt(10,10)` (642) quedó intacto, como todo `parseInt` | 🟢 | 🔧 Aplicado |
 | #5 Legibilidad | CDF-C1 | `var` → `const`/`let` con alcance de bloque | 🟢 | 🔧 Parcial (267/397; ver bitácora) |
 | #5 Legibilidad | CDF-D3 | Declarar los ≥12 global leaks (sin cambiar la semántica de CDF-A5) | 🟡 | 🔧 Parcial (11/12; ver bitácora) |
 | #5 Legibilidad | CDF-D4 | Quitar el filtro duplicado (252-268) | 🟢 | 🔧 Aplicado |
@@ -127,6 +127,10 @@ Anatomía del costo del `afterSubmit` (explica los 11-21s medidos): `record.load
 
 **Matriz de riesgo:** 🟢 ×9 (sin aprobación) · 🟡 ×5 (revisión conjunta) · 🔴 ×3 (CDF-B1, CDF-B5, CDF-D1 — requieren aprobación explícita y no se aplican en este refactor).
 **Aplicado (2026-09-15):** detalle por ID, verificación medida y exclusiones en la [bitácora de aplicación](5-conexion-directa-fe-ss-bitacora.md).
+
+> **Conteo de C5:** el header del `_REF` (líneas 21-23) dice "los 209 sitios": cuenta solo los **directos** (`parseFloat(x, 10)` sin paréntesis dentro del argumento). El total aplicado es **209 directos + 147 anidados = 356**, todos en código vivo; los que quedan en el `_REF` están dentro de comentarios.
+>
+> **CDF-C2 no tiene unidad propia:** los restos 1.0 viven solo en bloques comentados y se fueron con **CDF-D2**. Por eso el commit `9a433dd` no lista C2.
 
 ---
 

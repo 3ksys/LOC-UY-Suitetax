@@ -3,7 +3,7 @@
 **Script:** `L598 - Asignar Rubro IVA` · **Archivo:** `LOC UY/L598 - Asignar Rubro IVA.js` · **LOC:** 473
 **Tipo:** UserEvent · **Entry points declarados:** solo `afterSubmit` (`return` en líneas 470-472) → consistente con el **×1** del baseline
 **Módulo:** Transacciones · **Toca impuestos:** sí 💰 · **Tiempo medido:** **2.9s ×1** (Factura de Compra; 2.7s en Factura y NC de Venta — [baseline](../flujos-prueba-y-plan-ejecucion.md))
-**Fase:** REFACTOR — **B1, B2, C1-C3 y D1-D7 aplicados el 2026-09-15** en `L598 - Asignar Rubro IVA_REF.js` (ver [§3.bis](#3bis-unidades-aplicadas-2026-09-15)). El original **nunca** se modifica. **Pendiente: deploy aislado y caracterización.**
+**Fase:** REFACTOR — **B1, B2, C1-C3 y D1-D7 aplicados el 2026-09-15** en `L598 - Asignar Rubro IVA_REF.js` (ver [§3.bis](#3bis-unidades-aplicadas-2026-09-15)). El original **nunca** se modifica. **Deployado aislado y caracterizado (2026-09-18)** en Factura de Compra y NC de Compra: salida idéntica y **ARI-B2 medido 7 → 4 búsquedas, 90 → 65 GU (−28 %)** — ver [caracterización §4 y §5](../caracterizacion/ola-3-6-pruebas-2026-09-17.md#4-prueba-2--factura-de-compra-baseline-576-id-15941-1409-vs-_ref-578-id-15948-1809). Quedan ramas sin cubrir (ver [Pendiente](#pendiente)).
 
 ---
 
@@ -132,9 +132,16 @@ Sin argumento de equivalencia no trivial: `var`→`const/let` (el `var i` reutil
 ### Pendiente
 
 - [x] **Desvío de deploy (2026-09-16):** los IDs de parámetro no se pueden duplicar en la cuenta; el `_REF` los lee por constantes `PARAM_*` con sufijo `_ref`. Revertir al reemplazar al original. Regla en [carga y deploy §3.bis](../carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios).
-- [ ] Deploy aislado (Status `Testing`, Audience rol de pruebas) — necesita inventario de deployments (duda #3).
-- [ ] Caracterización: Factura de Compra UAT 04, línea por línea, los 6 casos del §6. Antes: confirmar orden de UEs vs `Seteo de Tax Codes` (duda #1).
-- [ ] Medición GU: esperado **leve** ahorro (B2 en ventas; B1 es CPU, no GU). El salto es ARI-A1.
+- [x] Deploy aislado (2026-09-17): `_l598_ari_ref_vendorbill` y `_vendorcredit`, Status `Testing`, audiencia Mobeats. Inventario del original relevado: Cheque, Credit Memo, Invoice, Vendor Bill, Vendor Credit. Ver [caracterización §0](../caracterizacion/ola-3-6-pruebas-2026-09-17.md#0-qué-quedó-deployado-y-qué-no).
+- [x] Caracterización — **Prueba 2** (Factura de Compra #578, id 15948, contra baseline #576) y **Prueba 3** (NC de Compra #128, id 15949, contra baseline #126): aislamiento probado, `URU-RUBRO IVA` idéntico (505 en la factura, 506 en la NC). Ver [caracterización §4 y §5](../caracterizacion/ola-3-6-pruebas-2026-09-17.md#4-prueba-2--factura-de-compra-baseline-576-id-15941-1409-vs-_ref-578-id-15948-1809).
+- [x] Medición GU: **ARI-B2 medido 7 → 4 búsquedas, 90 → 65 GU (−28 %)** en la factura; segunda muestra en la NC: 65 GU / 4 búsquedas. El salto grande sigue siendo ARI-A1.
+- [ ] Caracterización de lo no cubierto (ambas pruebas fueron con una sola línea de ítem):
+  - líneas de gasto: índice por cuenta de **B1**, **D3** y la rama de `l598esOneworld`;
+  - publicidad: ítem / cuenta con el flag de publicidad marcado (**D4**, **C3**);
+  - rama de ventas de **D6** (`rubroIVAEquivalente`) y línea facturable con `customer`;
+  - **Cheque** con APM (hallazgo lateral: posible `load()+save()` sin escritura);
+  - regeneración del TXT DGI sobre el período caracterizado;
+  - corrida del original el mismo día (APM individual por un usuario `URU - Contador`).
 
 ## 4. Recomendaciones Grupo A
 
@@ -162,6 +169,8 @@ Sin argumento de equivalencia no trivial: `var`→`const/let` (el `var i` reutil
 ## 6. Casos de caracterización sugeridos
 
 Contexto UAT: Ventas 06-13 observadas por CAE (**no re-guardar** facturas/NC de venta existentes bloqueadas); Compra UAT 04 ✅ OK.
+
+> **Estado (2026-09-18):** ejecutados el caso 1 **solo con línea de ítem** (Prueba 2) y el caso 3 **sin publicidad ni verificación de `apply`** (Prueba 3), más la medición del caso 5 — ver [caracterización §4 y §5](../caracterizacion/ola-3-6-pruebas-2026-09-17.md#4-prueba-2--factura-de-compra-baseline-576-id-15941-1409-vs-_ref-578-id-15948-1809). Siguen abiertos: líneas de gasto, bordes del caso 2, venta (caso 4), Cheque y TXT DGI (caso 6).
 
 1. **Factura de Compra (UAT 04) — caso primario, re-ejecutable hoy:** líneas de ítem con tax code mapeado + líneas de gasto con cuenta mapeada. Comparar **línea por línea** `custcol_l598_rubro_iva` y `custcol_l598_rubro_iva_equival_ventas` entre original y `_REF`.
 2. **Bordes en la misma Factura de Compra:** gasto cuya cuenta Y tax code tienen rubro (predominio de cuenta, 322-333); línea sin mapeo (rama que limpia con `''`, 349); línea facturable con `customer` (equivalente ventas, 345-347); ítem con `custitem_l598_aplica_publicidad` marcado y sin marcar (161 — de paso confirma el tipo devuelto por el checkbox agrupado); gasto con cuenta con `custrecord_l598_aplica_publicidad`.

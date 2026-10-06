@@ -22,9 +22,9 @@ Procedimiento por script: [carga y deploy §1-§4](carga-y-deploy-de-scripts.md#
 
 | Orden | Archivo | Script → Name (≤40) | Script → ID | Deployments (`Status = Testing`) |
 |:--:|---|---|---|---|
-| 1 | `L598 - Setear Unidad Indexada_REF.js` | `REF - L598 - Setear Unidad Indexada` | `customscript_l598_setear_unidad_indexada_ref` | `customdeploy_l598_sui_ref_salesorder` |
+| 1 | `L598 - Setear Unidad Indexada_REF.js` | `REF - L598 - Setear Unidad Indexada` | `customscript_l598_setear_unidad_ind_ref` | `customdeploy_3k_sui_ref_salesorder` |
 | 2 | `L598 - Asignar Rubro IVA_REF.js` | `REF - L598 - Asignar Rubro IVA` | `customscript_l598_asignar_rubro_iva_ref` | `customdeploy_l598_ari_ref_vendorbill` · `_vendorcredit` |
-| 3 | `L598 -Transacción (Servidor)_REF.js` | `REF - L598 - Transaccion (Servidor)` | `customscript_l598_transaccion_servidor_ref` | `customdeploy_l598_trs_ref_vendorbill` · `_vendorcredit` · `_salesorder` |
+| 3 | `L598 -Transacción (Servidor)_REF.js` | `REF - L598 - Transaccion (Servidor)` | `customscript_l598_transaccion_serv_ref` | `customdeploy_l598_trs_ref_vendorbill` · `_vendorcredit` · `_salesorder` |
 | ~~4~~ | ~~`L598 - Calcular Retenciones (SS)V2_REF.js`~~ | **NO SE DEPLOYA** | — | 🔴 **El original está `INACTIVE` en la cuenta** (verificado 17/09, bundle 475567). Sin baseline no hay caracterización posible, y activar un script del bundle es decisión de Tekiio. Los Casos A y B pierden la parte de retenciones; el resto sigue válido |
 
 SUI va primero **a propósito**: es el más chico y tiene parámetro de script — sirve para descubrir el problema de abajo con el menor costo.
@@ -57,10 +57,12 @@ Otros dos gotchas del mismo bloque: el campo ID de Script y de Deployment **ya t
 
 > 🔴 **Resultado del humo (2026-09-17):** el primer guardado de una Orden de Venta falló con `ReferenceError: idTransaccion is not defined` en `Transacción (Servidor)_REF.js:1952`. Bug de la extracción TRS-D4 del 20/08 (parámetro muerto pasado fuera de su bloque `let`), invisible para `node --check` y para el chequeo de variables libres. Corregido, verificado con el nuevo `tools/blockscope.py` y commiteado; **re-subir el archivo al File Cabinet antes de repetir el humo.** Detalle en la [bitácora](refactors/2-transaccion-servidor-bitacora-unidades-1-4.md#el-cuarto-bug--el-que-atrapó-la-prueba-de-humo-no-el-chequeo-2026-09-17).
 
-- [ ] 4 Script records creados con archivo `_REF`, `node --check` ya pasó en el repo.
-- [ ] 9 deployments en `Testing`, IDs según la tabla, parámetros cargados.
-- [x] Rol activo = `URU-Contador Suitetax (Mobeats)`. **Humo y Prueba 1 cerradas el 2026-09-17** — resultados en [caracterización ola 3-6](caracterizacion/ola-3-6-pruebas-2026-09-17.md).
-- [ ] Un guardado de humo en una **Orden de Venta nueva** → en Script Execution Logs aparecen `customscript_l598_setear_unidad_indexada_ref` y `customscript_l598_transaccion_servidor_ref`, y **no** `L598 - Setear Unidad Indexada` ni `L598 -Transacción (Servidor)`.
+- [x] **3** Script records creados con archivo `_REF` (SUI, ARI, TRS), `node --check` ya pasó en el repo. CRT no: original `INACTIVE`.
+- [x] **6** deployments en `Testing` (SUI 1, ARI 2, TRS 3), IDs según la tabla, parámetros `_ref` creados. Los 3 de CRT no se crearon.
+- [x] Rol activo = `URU-Contador Suitetax (Mobeats)`. **Humo y Prueba 1 cerradas el 2026-09-17; Pruebas 2 y 3 el 2026-09-18** — resultados en [caracterización ola 3-6](caracterizacion/ola-3-6-pruebas-2026-09-17.md).
+- [x] Un guardado de humo en una **Orden de Venta nueva** → en Script Execution Logs aparecen `customscript_l598_setear_unidad_ind_ref` y `customscript_l598_transaccion_serv_ref`, y **no** `L598 - Setear Unidad Indexada` ni `L598 -Transacción (Servidor)`.
+
+> **Estado de los casos (2026-09-18):** Caso C → **Prueba 1** (OV 52), Caso A → **Prueba 2** (Factura de Compra #578) y Caso B → **Prueba 3** (NC de Compra #128), todos ejecutados **sin CRT** y sin Resguardo. ⛔ **Las partes de CRT están bloqueadas:** el original está `INACTIVE` y reactivarlo o reorientar a `Calc Ret. Lineas` es decisión de Tekiio. ⏳ **Caso D (CDF) pendiente:** requiere crear los 12 parámetros `_ref`. Detalle en [caracterización ola 3-6](caracterizacion/ola-3-6-pruebas-2026-09-17.md).
 
 ---
 
