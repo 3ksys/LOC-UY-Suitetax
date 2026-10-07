@@ -62,7 +62,7 @@ Otros dos gotchas del mismo bloque: el campo ID de Script y de Deployment **ya t
 - [x] Rol activo = `URU-Contador Suitetax (Mobeats)`. **Humo y Prueba 1 cerradas el 2026-09-17; Pruebas 2 y 3 el 2026-09-18** — resultados en [caracterización ola 3-6](caracterizacion/ola-3-6-pruebas-2026-09-17.md).
 - [x] Un guardado de humo en una **Orden de Venta nueva** → en Script Execution Logs aparecen `customscript_l598_setear_unidad_ind_ref` y `customscript_l598_transaccion_serv_ref`, y **no** `L598 - Setear Unidad Indexada` ni `L598 -Transacción (Servidor)`.
 
-> **Estado de los casos (2026-09-18):** Caso C → **Prueba 1** (OV 52), Caso A → **Prueba 2** (Factura de Compra #578) y Caso B → **Prueba 3** (NC de Compra #128), todos ejecutados **sin CRT** y sin Resguardo. ⛔ **Las partes de CRT están bloqueadas:** el original está `INACTIVE` y reactivarlo o reorientar a `Calc Ret. Lineas` es decisión de Tekiio. ⏳ **Caso D (CDF) pendiente:** requiere crear los 12 parámetros `_ref`. Detalle en [caracterización ola 3-6](caracterizacion/ola-3-6-pruebas-2026-09-17.md).
+> **Estado de los casos (2026-09-18):** Caso C → **Prueba 1** (OV 52), Caso A → **Prueba 2** (Factura de Compra #578) y Caso B → **Prueba 3** (NC de Compra #128), todos ejecutados **sin CRT** y sin Resguardo. ⛔ **Las partes de CRT están bloqueadas:** el original está `INACTIVE` y reactivarlo o reorientar a `Calc Ret. Lineas` es decisión de Tekiio. ⏳ **Caso D (CDF) pendiente:** requiere crear los 12 parámetros `_ref` (`custscript_l598_cdf_ref_*`, ya aplicados en el `_REF`; re-subirlo al File Cabinet). IDs en [carga y deploy §3.bis](carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios). Detalle en [caracterización ola 3-6](caracterizacion/ola-3-6-pruebas-2026-09-17.md).
 
 ---
 
@@ -108,6 +108,8 @@ Elegir un importe con miles ≠ 0 para no pisar el bug CRT-A8 (que existe en amb
 ## 5. Bloque 16–18 — Caso D: Remito nuevo (Ventas 06), si hay tiempo
 
 Requiere deployar `customscript_l598_conexion_directa_fe_ss_ref` en `itemfulfillment`. Crear un Remito **nuevo** — nunca re-guardar los observados por CAE. Comparar los **archivos JSON y XML persistidos** en la transacción (se generan al guardar, aunque el CAE falle con 100000) y que `custbody_l598_cae` quede vacío en ambos. B3/B4 deberían mostrar 1 búsqueda y hasta 24 `config.load` menos en APM.
+
+Antes del deploy, crear en el Script record con **`New Parameter`** (el prefijo `custscript` ya está), copiando Type / List / Preference del original y el valor de cada deployment: `_l598_cdf_ref_c_est_erro` · `_l598_cdf_ref_c_est_sine` · `_l598_cdf_ref_m_err_conf` · `_l598_cdf_ref_m_err_cae` · `_l598_cdf_ref_m_err_xml` · `_l598_cdf_ref_m_sin_err` · `_l598_cdf_ref_m_err_bot` · `_l598_cdf_ref_cod_fac_li` · `_l598_cdf_ref_com_est_rem_env` · `_l598_cdf_ref_agrupacion` · `_l598_cdf_ref_raz_glob_co` · `_l598_cdf_ref_form_pag_mu`. Mapeo a los IDs originales en [carga y deploy §3.bis](carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios).
 
 ---
 

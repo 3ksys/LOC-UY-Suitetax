@@ -198,6 +198,7 @@ Consecuencia: si el `_REF` se deploya sin parámetro, `getParameter` devuelve `n
 2. En el Script record del `_REF`, cada parámetro se crea con **`New Parameter`** (el formulario completo; el editor en línea de la sublista trunca ID y label) con el ID `_ref`, y **mismo Type, List/Record y Preference** que el original.
 3. En cada deployment del `_REF` se carga el **mismo valor** que tiene el deployment original correspondiente.
 4. El día que el `_REF` reemplace al original, **volver las constantes a los IDs originales**. Está anotado en el header de cada archivo y en su bitácora.
+5. **Si el sufijo `_ref` no entra en 40 caracteres**, se reemplaza el prefijo largo por un **prefijo corto de script** y se conserva la cola distintiva del ID original: `custscript_l598_<sigla>_ref_` + cola. Primer caso: Conexión Directa FE, con `custscript_l598_cdf_ref_` (sus 12 IDs originales tienen 37-40 caracteres). El comentario `DESVÍO DE DEPLOY` lista el ID original de cada constante.
 
 | Script | ID original | ID en el `_REF` | Tipo |
 |---|---|---|---|
@@ -205,6 +206,18 @@ Consecuencia: si el `_REF` se deploya sin parámetro, `getParameter` devuelve `n
 | Asignar Rubro IVA | `custscript_l598_rubro_publicidad` | `custscript_l598_rubro_publicidad_ref` | copiar del original |
 | Calcular Retenciones (SS)V2 | `custscript_l598_calc_ret_ss_pfp2` | `custscript_l598_calc_ret_ss_pfp2_ref` | copiar del original |
 | Calcular Retenciones (SS)V2 | `custscript_l598_calc_ret_val_resgret` | `custscript_l598_calc_ret_val_resgret_ref` (40 justos) | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_c_est_erro` | `custscript_l598_cdf_ref_c_est_erro` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_c_est_sine` | `custscript_l598_cdf_ref_c_est_sine` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_m_err_conf` | `custscript_l598_cdf_ref_m_err_conf` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_m_err_cae` | `custscript_l598_cdf_ref_m_err_cae` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_m_err_xml` | `custscript_l598_cdf_ref_m_err_xml` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_m_sin_err` | `custscript_l598_cdf_ref_m_sin_err` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_m_err_bot` | `custscript_l598_cdf_ref_m_err_bot` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_cod_fac_li` | `custscript_l598_cdf_ref_cod_fac_li` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_com_estado_remito_enviad` | `custscript_l598_cdf_ref_com_est_rem_env` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_agrupacion` | `custscript_l598_cdf_ref_agrupacion` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_di_fe_ss_raz_glob_co` | `custscript_l598_cdf_ref_raz_glob_co` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_con_di_fe_ss_form_pag_mu` | `custscript_l598_cdf_ref_form_pag_mu` | copiar del original |
 
 Límite: el ID completo no puede pasar de 40 caracteres (`custscript_` son 11).
 

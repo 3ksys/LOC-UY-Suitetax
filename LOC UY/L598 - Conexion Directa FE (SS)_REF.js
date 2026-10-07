@@ -80,6 +80,15 @@
  *   montoItem se logueaba antes de su var, y mensaje de un bloque se lee en
  *   otro). Preferimos menos conversiones seguras que muchas dudosas.
  *
+ * DESVIO DE DEPLOY (no de refactor): los IDs de parametro de script son unicos
+ * en la cuenta y pertenecen al Script record ORIGINAL; el _REF no puede
+ * declararlos (verificado 2026-09-16: "This custom field already exists").
+ * El _REF lee sus parametros por constantes PARAM_*. Como los IDs originales
+ * ya tienen 37-40 caracteres y el sufijo _ref no entra en el limite de 40, se
+ * usa el prefijo corto custscript_l598_cdf_ref_ + la cola del ID original. El
+ * dia que este archivo reemplace al original, volver los valores de esas
+ * constantes a los IDs originales. Ver docs/carga-y-deploy-de-scripts.md.
+ *
  * Fuera de este refactor, con motivo:
  *   B1 (SuiteQL para customsearch_l598_trans_gen_cae_con_dire, 89 columnas
  *   posicionales), B5 (doble load + doble save) y D1 (division de
@@ -98,6 +107,34 @@
         'N/record', 'N/search', 'L598/utilities', 'N/runtime', 'N/format', 'N/config', 'N/file', 'N/render', 'N/url', 'N/https', 'N/email'
     ],
     function (record, search, utilities, runtime, format, config, file, render, url, https, email) {
+
+        // DESVÍO DE DEPLOY: el sufijo _ref no entra en 40 caracteres; se usa el prefijo
+        // corto custscript_l598_cdf_ref_ + la cola del ID original. IDs originales:
+        //   PARAM_COD_ESTADO_ERROR:                'custscript_l598_con_dir_fe_ss_c_est_erro'
+        //   PARAM_COD_ESTADO_SIN_ERROR:            'custscript_l598_con_dir_fe_ss_c_est_sine'
+        //   PARAM_MSJ_ERROR_CONFIGURACION:         'custscript_l598_con_dir_fe_ss_m_err_conf'
+        //   PARAM_MSJ_ERROR_CAE:                   'custscript_l598_con_dir_fe_ss_m_err_cae'
+        //   PARAM_MSJ_ERROR_XML:                   'custscript_l598_con_dir_fe_ss_m_err_xml'
+        //   PARAM_MSJ_SIN_ERROR:                   'custscript_l598_con_dir_fe_ss_m_sin_err'
+        //   PARAM_MSJ_ERROR_BOTON:                 'custscript_l598_con_dir_fe_ss_m_err_bot'
+        //   PARAM_COD_INTEG_FACTURA_LISTA:         'custscript_l598_con_dir_fe_ss_cod_fac_li'
+        //   PARAM_COMPROBAR_ESTADO_REMITO_ENVIADO: 'custscript_l598_com_estado_remito_enviad'
+        //   PARAM_REALIZAR_AGRUPACION:             'custscript_l598_con_dir_fe_agrupacion'
+        //   PARAM_RAZON_GLOBAL:                    'custscript_l598_con_di_fe_ss_raz_glob_co'
+        //   PARAM_FORMA_PAGO_MULTIPLE:             'custscript_l598_con_di_fe_ss_form_pag_mu'
+        // Ver header.
+        const PARAM_COD_ESTADO_ERROR                = 'custscript_l598_cdf_ref_c_est_erro';
+        const PARAM_COD_ESTADO_SIN_ERROR            = 'custscript_l598_cdf_ref_c_est_sine';
+        const PARAM_MSJ_ERROR_CONFIGURACION         = 'custscript_l598_cdf_ref_m_err_conf';
+        const PARAM_MSJ_ERROR_CAE                   = 'custscript_l598_cdf_ref_m_err_cae';
+        const PARAM_MSJ_ERROR_XML                   = 'custscript_l598_cdf_ref_m_err_xml';
+        const PARAM_MSJ_SIN_ERROR                   = 'custscript_l598_cdf_ref_m_sin_err';
+        const PARAM_MSJ_ERROR_BOTON                 = 'custscript_l598_cdf_ref_m_err_bot';
+        const PARAM_COD_INTEG_FACTURA_LISTA         = 'custscript_l598_cdf_ref_cod_fac_li';
+        const PARAM_COMPROBAR_ESTADO_REMITO_ENVIADO = 'custscript_l598_cdf_ref_com_est_rem_env';
+        const PARAM_REALIZAR_AGRUPACION             = 'custscript_l598_cdf_ref_agrupacion';
+        const PARAM_RAZON_GLOBAL                    = 'custscript_l598_cdf_ref_raz_glob_co';
+        const PARAM_FORMA_PAGO_MULTIPLE             = 'custscript_l598_cdf_ref_form_pag_mu';
 
         const camposInfoFE = [
             'idInterno',
@@ -188,14 +225,14 @@
 
             let proceso = 'beforeLoad';
             let currentScript = runtime.getCurrentScript();
-            let codigoEstadoError = currentScript.getParameter('custscript_l598_con_dir_fe_ss_c_est_erro'); // Codigo Estado Log FE - Error (FESTADO-2)
-            let codigoEstadoSinError = currentScript.getParameter('custscript_l598_con_dir_fe_ss_c_est_sine'); // Código Estado Log FE - Sin error (FESTADO-1)
-            let tipoMensajeErrorConfiguracionFE = currentScript.getParameter('custscript_l598_con_dir_fe_ss_m_err_conf'); // Mensaje Log FE - Error Configuración FE
-            let tipoMensajeErrorCAE = currentScript.getParameter('custscript_l598_con_dir_fe_ss_m_err_cae'); // Mensaje Log FE - Error CAE FE
-            let tipoMensajeErrorInesperadoXML = currentScript.getParameter('custscript_l598_con_dir_fe_ss_m_err_xml'); // Mensaje Log FE - Error Inesperado XML
-            let tipoMensajeSinError = currentScript.getParameter('custscript_l598_con_dir_fe_ss_m_sin_err'); // Mensaje Log FE - Sin error	
-            let tipoMensajeErrorBoton = currentScript.getParameter('custscript_l598_con_dir_fe_ss_m_err_bot'); // Error Generando Botón de Generar CAE en la Transacción
-            let tipoIntegFacturaLista = currentScript.getParameter('custscript_l598_con_dir_fe_ss_cod_fac_li'); // Integracion FacturaLista
+            let codigoEstadoError = currentScript.getParameter(PARAM_COD_ESTADO_ERROR); // Codigo Estado Log FE - Error (FESTADO-2)
+            let codigoEstadoSinError = currentScript.getParameter(PARAM_COD_ESTADO_SIN_ERROR); // Código Estado Log FE - Sin error (FESTADO-1)
+            let tipoMensajeErrorConfiguracionFE = currentScript.getParameter(PARAM_MSJ_ERROR_CONFIGURACION); // Mensaje Log FE - Error Configuración FE
+            let tipoMensajeErrorCAE = currentScript.getParameter(PARAM_MSJ_ERROR_CAE); // Mensaje Log FE - Error CAE FE
+            let tipoMensajeErrorInesperadoXML = currentScript.getParameter(PARAM_MSJ_ERROR_XML); // Mensaje Log FE - Error Inesperado XML
+            let tipoMensajeSinError = currentScript.getParameter(PARAM_MSJ_SIN_ERROR); // Mensaje Log FE - Sin error	
+            let tipoMensajeErrorBoton = currentScript.getParameter(PARAM_MSJ_ERROR_BOTON); // Error Generando Botón de Generar CAE en la Transacción
+            let tipoIntegFacturaLista = currentScript.getParameter(PARAM_COD_INTEG_FACTURA_LISTA); // Integracion FacturaLista
             let mensaje = '';
             let punto_venta = '';
             let refLog = '';
@@ -218,7 +255,7 @@
                     });
 
                     // revisar si es un remito y si su estado de entrega es distinto de entregado no puede proceder
-                    const comprobarEstadoRemitoEnviado = currentScript.getParameter('custscript_l598_com_estado_remito_enviad');
+                    const comprobarEstadoRemitoEnviado = currentScript.getParameter(PARAM_COMPROBAR_ESTADO_REMITO_ENVIADO);
                     if (comprobarEstadoRemitoEnviado && recType == "itemfulfillment") {
                         const estado = recordTransaction.getValue({ fieldId: "shipstatus" });
                         if (estado != "C") { // C significa enviado
@@ -630,15 +667,15 @@
 
             let proceso = 'afterSubmit';
             let currentScript = runtime.getCurrentScript();
-            let codigoEstadoError = currentScript.getParameter('custscript_l598_con_dir_fe_ss_c_est_erro'); // Codigo Estado Log FE - Error (FESTADO-2)
-            let codigoEstadoSinError = currentScript.getParameter('custscript_l598_con_dir_fe_ss_c_est_sine'); // Código Estado Log FE - Sin error (FESTADO-1)
-            let tipoMensajeErrorConfiguracionFE = currentScript.getParameter('custscript_l598_con_dir_fe_ss_m_err_conf'); // Mensaje Log FE - Error Configuración FE
-            let tipoMensajeErrorCAE = currentScript.getParameter('custscript_l598_con_dir_fe_ss_m_err_cae'); // Mensaje Log FE - Error CAE FE
-            let tipoMensajeErrorInesperadoXML = currentScript.getParameter('custscript_l598_con_dir_fe_ss_m_err_xml'); // Mensaje Log FE - Error Inesperado XML
-            let tipoMensajeSinError = currentScript.getParameter('custscript_l598_con_dir_fe_ss_m_sin_err'); // Mensaje Log FE - Sin error	
-            let tipoIntegFacturaLista = currentScript.getParameter('custscript_l598_con_dir_fe_ss_cod_fac_li'); // Integracion FacturaLista
+            let codigoEstadoError = currentScript.getParameter(PARAM_COD_ESTADO_ERROR); // Codigo Estado Log FE - Error (FESTADO-2)
+            let codigoEstadoSinError = currentScript.getParameter(PARAM_COD_ESTADO_SIN_ERROR); // Código Estado Log FE - Sin error (FESTADO-1)
+            let tipoMensajeErrorConfiguracionFE = currentScript.getParameter(PARAM_MSJ_ERROR_CONFIGURACION); // Mensaje Log FE - Error Configuración FE
+            let tipoMensajeErrorCAE = currentScript.getParameter(PARAM_MSJ_ERROR_CAE); // Mensaje Log FE - Error CAE FE
+            let tipoMensajeErrorInesperadoXML = currentScript.getParameter(PARAM_MSJ_ERROR_XML); // Mensaje Log FE - Error Inesperado XML
+            let tipoMensajeSinError = currentScript.getParameter(PARAM_MSJ_SIN_ERROR); // Mensaje Log FE - Sin error	
+            let tipoIntegFacturaLista = currentScript.getParameter(PARAM_COD_INTEG_FACTURA_LISTA); // Integracion FacturaLista
             // INICIO - Gestion de agrupacion de lineas
-            let realizarAgrupacion = currentScript.getParameter('custscript_l598_con_dir_fe_agrupacion'); // Indicacion de agrupación de lineas
+            let realizarAgrupacion = currentScript.getParameter(PARAM_REALIZAR_AGRUPACION); // Indicacion de agrupación de lineas
             // FIN - Gestion de agrupacion de lineas
             let mensaje = '';
             let refLog = '';
@@ -661,7 +698,7 @@
                     });
 
                     // revisar si es un remito y si su estado de entrega es distinto de entregado no puede proceder
-                    const comprobarEstadoRemitoEnviado = currentScript.getParameter('custscript_l598_com_estado_remito_enviad');
+                    const comprobarEstadoRemitoEnviado = currentScript.getParameter(PARAM_COMPROBAR_ESTADO_REMITO_ENVIADO);
                     if (comprobarEstadoRemitoEnviado && recType == "itemfulfillment") {
                         const estado = recordTransaction.getValue({ fieldId: "shipstatus" });
                         if (estado != "C") { // C significa enviado
@@ -3834,7 +3871,7 @@
                     } else {
                         // Es Referencia Global
                         const currentScript = runtime.getCurrentScript();
-                        const razonGlobal = currentScript.getParameter('custscript_l598_con_di_fe_ss_raz_glob_co');
+                        const razonGlobal = currentScript.getParameter(PARAM_RAZON_GLOBAL);
 
                         var data = {};
                         data.internalid = "";
@@ -3962,7 +3999,7 @@
             try {
 
                 const currentScript = runtime.getCurrentScript();
-                const formaPagoMultiple = currentScript.getParameter('custscript_l598_con_di_fe_ss_form_pag_mu');
+                const formaPagoMultiple = currentScript.getParameter(PARAM_FORMA_PAGO_MULTIPLE);
                 const formaPago = rec.getValue({ fieldId: 'custbody_3k_forma_pago_local' });
 
                 log.debug('getMetodosPago', 'formaPagoMultiple: ' + formaPagoMultiple + ' / formaPago: ' + formaPago);
