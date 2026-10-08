@@ -214,7 +214,7 @@ Consecuencia: si el `_REF` se deploya sin parámetro, `getParameter` devuelve `n
 | Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_m_sin_err` | `custscript_l598_cdf_ref_m_sin_err` | copiar del original |
 | Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_m_err_bot` | `custscript_l598_cdf_ref_m_err_bot` | copiar del original |
 | Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_ss_cod_fac_li` | `custscript_l598_cdf_ref_cod_fac_li` | copiar del original |
-| Conexion Directa FE (SS) | `custscript_l598_com_estado_remito_enviad` | `custscript_l598_cdf_ref_com_est_rem_env` | copiar del original |
+| Conexion Directa FE (SS) | `custscript_l598_com_estado_remito_enviad` | `custscript_l598_cdf_ref_com_est_rem_env` | **no crear: no existe en el original de la cuenta** (verificado 2026-10-07; el código lee `null` en ambas versiones) |
 | Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_agrupacion` | `custscript_l598_cdf_ref_agrupacion` | copiar del original |
 | Conexion Directa FE (SS) | `custscript_l598_con_di_fe_ss_raz_glob_co` | `custscript_l598_cdf_ref_raz_glob_co` | copiar del original |
 | Conexion Directa FE (SS) | `custscript_l598_con_di_fe_ss_form_pag_mu` | `custscript_l598_cdf_ref_form_pag_mu` | copiar del original |

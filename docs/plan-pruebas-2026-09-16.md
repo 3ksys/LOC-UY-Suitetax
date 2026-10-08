@@ -16,6 +16,44 @@ Los originales **no se tocan**. Nunca.
 
 ---
 
+## 0.bis Criterio de prueba desde 2026-10-08
+
+**Hallazgo (2026-10-07).** La cuenta de desarrollo (`3KSYS-DEV ACCT SDN`) es **compartida**: otros equipos editan los originales directamente en el File Cabinet. El diff de los originales descargados el 07/10 contra el repo dio:
+
+| Archivo | Original en la cuenta vs `main` |
+|---|---|
+| ARI, STC | Idénticos |
+| SUI | Reescrito sobre una lib nueva, `L598 - Cálculo Unidades Indexadas (Lib)` |
+| TRS | Agrega asiento de provisión de IVA **solo en `invoice`/`creditmemo`** (`L598 - LIB - Journal Provisionamiento.js`) |
+| CDF | +175/−46: descuento global en `beforeSubmit`, SICFE, `L598/redondeoNexus`, anulación de cobranza |
+| CRT V2 | +23/−6: `requestSuitelet`, `total_ret`, resguardo en EDIT |
+| `L598 - Utilities` · `configuration_l598.json` | Agrega `limpiarNaN` · agrega 2 rutas de lib |
+
+Tekiio indicó que las versiones productivas viven en las cuentas **SDN4 y SDN2** (sin acceso nuestro). `origin/main` no tiene cambios de contenido (`72a682f` solo mueve archivos para SDF). **Decisión:** `main` es la referencia del refactor (⏳ pendiente de confirmación escrita de Tekiio); los `_REF` ya parten de `main`, no hay nada que portar.
+
+**Criterio por script:**
+
+| Script | Verificamos nosotros | Verifica Tekiio contra su baseline |
+|---|---|---|
+| ARI, STC | Comparación completa contra el original de la cuenta (idéntico a `main`). Sin cambios | — |
+| TRS | Comparación completa en `salesorder`, `vendorbill`, `vendorcredit` (la deriva no los toca). En `invoice`/`creditmemo`: solo el `_REF` | Equivalencia en `invoice`/`creditmemo` |
+| SUI, CDF | Solo el `_REF`: aislamiento (Script Execution Log), sin errores, APM (GU, búsquedas, operaciones de registro, efecto de los cambios B) y salidas coherentes con el código de `main` | Equivalencia contra su baseline |
+| CRT | ⛔ Bloqueado: original V2 `INACTIVE`; reactivar vs `Calc Ret. Lineas` sigue pendiente de Tekiio | — |
+
+> ⚠️ **No subir las copias del repo de `L598 - Utilities` ni de `configuration_l598.json` sobre las de la cuenta:** rompen los originales de SUI y CDF que viven ahí.
+>
+> **Regla de mismo día, obligatoria** para cualquier comparación en la cuenta de desarrollo: baseline y `_REF` el mismo día, y anotar la fecha de modificación del original en el File Cabinet.
+
+### Casos para Tekiio
+
+Comparación original (su baseline) vs `_REF`, mismos datos, rol y día:
+
+- **SUI** — Orden de Venta: re-guardar una existente y crear una nueva; comparar `custbody_l598_valor_unidad_indexada` y anotar la rama (TAFACE vs `currency.exchangeRate`), idealmente ambas. Resguardo (URU) y Remito: mismo campo. Borde sin valor (SS de config UI sin filas): campo vacío + mismo log en ambos. `xedit`: no debe setear.
+- **CDF** — Remito nuevo, factura simple, multi-tasa y con descuento global (monto y %): comparar el **contenido** del JSON (`custbody_l598_informacion_json_tran_fe`) y del XML (`custbody_l598_documento_xml_fe`), no los nombres (llevan fecha). `custbody_l598_cae` vacío en ambos. Cobranza con forma de pago simple: `detalleMetodosPago` vacío en ambos (CDF-A1 se reproduce, no se corrige). `beforeLoad` sin CAE: botón presente y mismos logs FE.
+- **TRS `invoice`/`creditmemo`** — Factura y NC de Venta (incl. `apply` y líneas time/itemcost/expcost): `custcol_l598_codigo_impuesto`, `custcol_l598_tasa_impuesto`, `custbody_l598_nro_comprobante`, `custbody_l598_monto_escrito` (byte a byte, bordes 10.50 / sin decimales / > 1.000.000), sucursal/serie y las 6 `custcol` del `afterSubmit`. El asiento de provisión de IVA es de su versión: queda fuera de la comparación.
+
+---
+
 ## 1. Bloque 08–10 — Deploy aislado de los 4 `_REF` nuevos
 
 Procedimiento por script: [carga y deploy §1-§4](carga-y-deploy-de-scripts.md#1-carga-del-archivo-al-file-cabinet). Carpeta del File Cabinet: `Refactor LOC URU - Mobeats`. Propietario: usuario Mobeats.
@@ -63,6 +101,8 @@ Otros dos gotchas del mismo bloque: el campo ID de Script y de Deployment **ya t
 - [x] Un guardado de humo en una **Orden de Venta nueva** → en Script Execution Logs aparecen `customscript_l598_setear_unidad_ind_ref` y `customscript_l598_transaccion_serv_ref`, y **no** `L598 - Setear Unidad Indexada` ni `L598 -Transacción (Servidor)`.
 
 > **Estado de los casos (2026-09-18):** Caso C → **Prueba 1** (OV 52), Caso A → **Prueba 2** (Factura de Compra #578) y Caso B → **Prueba 3** (NC de Compra #128), todos ejecutados **sin CRT** y sin Resguardo. ⛔ **Las partes de CRT están bloqueadas:** el original está `INACTIVE` y reactivarlo o reorientar a `Calc Ret. Lineas` es decisión de Tekiio. ⏳ **Caso D (CDF) pendiente:** requiere crear los 12 parámetros `_ref` (`custscript_l598_cdf_ref_*`, ya aplicados en el `_REF`; re-subirlo al File Cabinet). IDs en [carga y deploy §3.bis](carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios). Detalle en [caracterización ola 3-6](caracterizacion/ola-3-6-pruebas-2026-09-17.md).
+>
+> **Actualización 2026-10-08:** criterio nuevo en [§0.bis](#0bis-criterio-de-prueba-desde-2026-10-08). Los Casos A y C siguen válidos como comparación completa (`vendorbill`, `salesorder`: TRS y STC/ARI sin deriva); la parte SUI del Caso C pasa a verificación solo del `_REF`. Caso D: Script record `_REF` de CDF ya creado (07/10); faltan **11** parámetros, no 12 — ver §5.
 
 ---
 
@@ -99,7 +139,7 @@ Elegir un importe con miles ≠ 0 para no pisar el bug CRT-A8 (que existe en amb
 
 ## 4. Bloque 15–16 — Caso C: Orden de Venta (UAT Ventas 03)
 
-- **SUI:** `custbody_l598_valor_unidad_indexada`. Se ejercita la rama TAFACE o la de `currency.exchangeRate` según la config de la cuenta; anotar cuál.
+- **SUI:** `custbody_l598_valor_unidad_indexada`. Se ejercita la rama TAFACE o la de `currency.exchangeRate` según la config de la cuenta; anotar cuál. *Desde 2026-10-08 ([§0.bis](#0bis-criterio-de-prueba-desde-2026-10-08)):* el original de SUI en la cuenta está reescrito sobre otra lib, así que acá se verifica solo el `_REF` (valor coherente con el código de `main`); la equivalencia la compara Tekiio.
 - **TRS-A2 — el único lugar donde es observable.** En `salesorder` el `_REF` ya no hace `load()+save()`. APM debe mostrar **2 → 0 operaciones de registro** para TRS. Es la medición más limpia del día.
 - STC sobre `salesorder`: ya caracterizado; sirve de control.
 
@@ -107,9 +147,11 @@ Elegir un importe con miles ≠ 0 para no pisar el bug CRT-A8 (que existe en amb
 
 ## 5. Bloque 16–18 — Caso D: Remito nuevo (Ventas 06), si hay tiempo
 
-Requiere deployar `customscript_l598_conexion_directa_fe_ss_ref` en `itemfulfillment`. Crear un Remito **nuevo** — nunca re-guardar los observados por CAE. Comparar los **archivos JSON y XML persistidos** en la transacción (se generan al guardar, aunque el CAE falle con 100000) y que `custbody_l598_cae` quede vacío en ambos. B3/B4 deberían mostrar 1 búsqueda y hasta 24 `config.load` menos en APM.
+> 🔄 **Desde 2026-10-08 ([§0.bis](#0bis-criterio-de-prueba-desde-2026-10-08)):** el original de CDF en la cuenta difiere de `main` (+175/−46), así que este caso es **verificación solo del `_REF`**: aislamiento, sin errores, APM y JSON/XML coherentes con el código de `main`. La equivalencia contra el baseline la verifica Tekiio ([casos](#casos-para-tekiio)).
 
-Antes del deploy, crear en el Script record con **`New Parameter`** (el prefijo `custscript` ya está), copiando Type / List / Preference del original y el valor de cada deployment: `_l598_cdf_ref_c_est_erro` · `_l598_cdf_ref_c_est_sine` · `_l598_cdf_ref_m_err_conf` · `_l598_cdf_ref_m_err_cae` · `_l598_cdf_ref_m_err_xml` · `_l598_cdf_ref_m_sin_err` · `_l598_cdf_ref_m_err_bot` · `_l598_cdf_ref_cod_fac_li` · `_l598_cdf_ref_com_est_rem_env` · `_l598_cdf_ref_agrupacion` · `_l598_cdf_ref_raz_glob_co` · `_l598_cdf_ref_form_pag_mu`. Mapeo a los IDs originales en [carga y deploy §3.bis](carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios).
+Requiere deployar el `_REF` en `itemfulfillment`. **Script record ya creado (2026-10-07):** ID `customscript_l598_cdf_ss_ref` (el `customscript_l598_conexion_directa_fe_ss_ref` previsto pasa de 28 caracteres), entry points `beforeLoad` + `afterSubmit`, archivo re-subido (360.07 KB). Deployment a crear: `customdeploy_l598_cdf_ref_itemfulfill`. Crear un Remito **nuevo** — nunca re-guardar los observados por CAE. Revisar los **archivos JSON y XML persistidos** en la transacción (se generan al guardar, aunque el CAE falle con 100000) y que `custbody_l598_cae` quede vacío. B3/B4 deberían mostrar 1 búsqueda y hasta 24 `config.load` menos en APM.
+
+Antes del deploy (⏳ **todavía no creados**), crear en el Script record con **`New Parameter`** (el prefijo `custscript` ya está), copiando Type / List / Preference del original y el valor de cada deployment, los **11** que tiene el original en la cuenta: `_l598_cdf_ref_c_est_erro` · `_l598_cdf_ref_c_est_sine` · `_l598_cdf_ref_m_err_conf` · `_l598_cdf_ref_m_err_cae` · `_l598_cdf_ref_m_err_xml` · `_l598_cdf_ref_m_sin_err` · `_l598_cdf_ref_m_err_bot` · `_l598_cdf_ref_cod_fac_li` · `_l598_cdf_ref_agrupacion` · `_l598_cdf_ref_raz_glob_co` · `_l598_cdf_ref_form_pag_mu`. **No crear** `_l598_cdf_ref_com_est_rem_env`: su original `custscript_l598_com_estado_remito_enviad` no existe en la cuenta, así que lee `null` en ambas versiones. Mapeo a los IDs originales en [carga y deploy §3.bis](carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios).
 
 ---
 
