@@ -317,6 +317,14 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
           hlp,
           decimal;
 
+        // TRS-C2 (aprobado Tekiio Desarrollo 2026-10-14; pendiente revisión de Producto): estas variables se
+        // asignaban sin declarar (globals implícitos) en una función recursiva. Se declaran con let al inicio
+        // del cuerpo para que cada llamada recursiva tenga las suyas; no cambia la lógica ni la salida.
+        let rm0, m1, m2, m3, rm1, rm2, rm3,
+          r1, r2, r3, r4, r5, r6, r7, r8,
+          tmp, s, tmp1, tmp2, tmpn1, tmpn2, pred,
+          mldata, mdata, cdata;
+
         if (isNaN(n)) {
 
           alert("La Cantidad debe ser un valor Numérico.");
