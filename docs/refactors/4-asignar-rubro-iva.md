@@ -139,7 +139,7 @@ Sin argumento de equivalencia no trivial: `var`→`const/let` (el `var i` reutil
   - ~~líneas de gasto: índice por cuenta de **B1**, **D3** y la rama de `l598esOneworld`~~ → **verificado solo el `_REF` (2026-10-14)**: gasto sin tax code en `Utilities` → rubro 505 y equivalente 502; +35 GU / +4 búsquedas con gasto (B2). Baseline bloqueado por permiso del rol `URU - Contador` sobre Expense Categories. Ver [caracterización §7](../caracterizacion/ola-3-6-pruebas-2026-09-17.md#7-prueba-5--ari-con-línea-de-gasto-verificación-solo-del-_ref-582-id-15959-1410). Con tax code (#583): la cuenta predomina sobre el tax code (Utilities + 10 % → 505, no 506) y el gasto sin mapeo cae al rubro del tax code. Falta la comparación contra el original;
   - publicidad: ítem / cuenta con el flag de publicidad marcado (**D4**, **C3**);
   - rama de ventas de **D6** (`rubroIVAEquivalente`) y línea facturable con `customer`;
-  - **Cheque** con APM (hallazgo lateral: posible `load()+save()` sin escritura);
+  - ~~**Cheque** con APM~~ → **confirmado (2026-10-14, original)**: cheque sin tax code → `load()+save()` (2 ops), 80 GU, 6 búsquedas, ningún campo escrito. El `_REF` mantiene el `save()` incondicional (L195): evidencia para ARI-A1. Ver [caracterización §8](../caracterizacion/ola-3-6-pruebas-2026-09-17.md#8-prueba-6--ari-original-en-cheque-cheque-100-id-15962-1410);
   - regeneración del TXT DGI sobre el período caracterizado;
   - ~~corrida del original el mismo día~~ → hecha en la [Prueba 4](../caracterizacion/ola-3-6-pruebas-2026-09-17.md#6-prueba-4--factura-de-compra-el-mismo-día-original-580-id-15955-vs-_ref-581-id-15956-1410) (2026-10-14): original 2.58 s / 90 GU / 7 búsquedas, `_REF` 1.39 s / 65 GU / 4.
 
