@@ -80,6 +80,20 @@
  *   montoItem se logueaba antes de su var, y mensaje de un bloque se lee en
  *   otro). Preferimos menos conversiones seguras que muchas dudosas.
  *
+ * Unidad 5 - Grupo A aprobado por Tekiio (Desarrollo, 2026-10-14; pendiente
+ * revision de Producto; sin caracterizar en la cuenta, CDF en stand-by):
+ *   CDF-A3  anulacion de resguardo: se lee informacionCliente.custentity_l598_
+ *           tipo_documento[0].value (la columna que realmente pide el lookupFields)
+ *           en vez de custbody_l598_tipo_comprobante, propiedad inexistente que
+ *           lanzaba TypeError. Se mantiene el acceso [0].value sin guardas nuevas:
+ *           un select vacio seguiria lanzando, como antes.
+ *   CDF-A6  getLineCount(string) -> getLineCount({ sublistId: ... }) en las 2
+ *           llamadas (loop de lineas y referencias de resguardo).
+ *   CDF-D5  codigoPercEncontrado == true; -> = true; en el acumulador de
+ *           percepciones. Sin cambio observable hoy: los codigos del acumulador
+ *           son unicos por construccion, asi que el flag solo corta el loop en la
+ *           primera (unica) coincidencia.
+ *
  * DESVIO DE DEPLOY (no de refactor): los IDs de parametro de script son unicos
  * en la cuenta y pertenecen al Script record ORIGINAL; el _REF no puede
  * declararlos (verificado 2026-09-16: "This custom field already exists").
@@ -96,9 +110,8 @@
  *   B2 (beforeLoad: record.load -> lookupFields): excluido. lookupFields
  *   devuelve [{value,text}] para los selects y isEmpty([]) es false; no se
  *   puede probar equivalencia sin las definiciones de campo.
- *   D5 (codigoPercEncontrado == true, linea 2298 del original): excluido.
- *   Es una correccion de bug y su caracter "sin efecto" depende de un
- *   supuesto sobre los datos.
+ *   D5 (codigoPercEncontrado == true, linea 2298 del original): aplicado como
+ *   CDF-D5, ver "Unidad 5" (reclasificado de Grupo D a Grupo A el 2026-09-15).
  *   A1-A8 - registro de aprobaciones.
  * ============================================================================
  */
@@ -1782,7 +1795,7 @@
                             if (!utilities.isEmpty(informacionCliente)) {
                                 const informacionTipoDocumento = search.lookupFields({
                                     type: 'customrecord_l598_tipos_documentos',
-                                    id: informacionCliente.custbody_l598_tipo_comprobante[0].value,
+                                    id: informacionCliente.custentity_l598_tipo_documento[0].value, // CDF-A3 (aprobado Tekiio Desarrollo 2026-10-14; pendiente revisión de Producto)
                                     columns: ['custrecord_l598_tipos_documentos_codigo']
                                 })
 
@@ -2138,7 +2151,7 @@
                                                     for (var subListaContador = 0; subListaContador < tipoSublistas.length && errorEncontrado == false; subListaContador++) {
 
                                                         var tipoSublistaConsultar = tipoSublistas[subListaContador];
-                                                        const cantidadLineasArticulos = record_transaccion.getLineCount(tipoSublistaConsultar);
+                                                        const cantidadLineasArticulos = record_transaccion.getLineCount({ sublistId: tipoSublistaConsultar }); // CDF-A6 (aprobado Tekiio Desarrollo 2026-10-14; pendiente revisión de Producto)
 
                                                         for (let k = 0; k < cantidadLineasArticulos && errorEncontrado == false; k++) {
 
@@ -2436,7 +2449,7 @@
                                                                                                         var codigoPercEncontrado = false;
                                                                                                         for (var indicePerc = 0; objetoRespuesta.detalleTotalesPercyRet != null && indicePerc < objetoRespuesta.detalleTotalesPercyRet.length && codigoPercEncontrado == false; indicePerc++) {
                                                                                                             if (objetoRespuesta.detalleTotalesPercyRet[indicePerc].codigo == infoPercepcionyRetencion.codigo) {
-                                                                                                                codigoPercEncontrado == true;
+                                                                                                                codigoPercEncontrado = true; // CDF-D5 (aprobado Tekiio Desarrollo 2026-10-14; pendiente revisión de Producto)
                                                                                                                 indice = indicePerc;
                                                                                                             }
                                                                                                         }
@@ -2971,7 +2984,7 @@
                                                         if ((!utilities.isEmpty(referenciaGlobal) && (referenciaGlobal == 'T' || referenciaGlobal == true) && tipoTransaccion == 'customtransaction_l598_resguardos') && !errorEncontrado) {
 
                                                             var sublistaRefCFE = 'recmachcustrecord_l598_info_referencia_transac';
-                                                            let sublistaRefCFELines = record_transaccion.getLineCount(sublistaRefCFE);
+                                                            let sublistaRefCFELines = record_transaccion.getLineCount({ sublistId: sublistaRefCFE }); // CDF-A6 (aprobado Tekiio Desarrollo 2026-10-14; pendiente revisión de Producto)
                                                             var razonComprobanteReferencia = '';
 
                                                             //SE AGREGA ESTA VALIDACION YA QUE LA DGI PERMITE UN MAXIMO DE 40 LINEAS DE REFERENCIAS PARA LOS COMPROBANTES
