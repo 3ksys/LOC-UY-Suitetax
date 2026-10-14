@@ -30,9 +30,10 @@
  * Unidad 2 — B performance + D3:
  *   B1  filter() dentro de los loops por línea -> índices Map construidos una
  *       vez por llamada ("primer match gana", igual que filter(...)[0]).
- *       ⚠️ Preserva ARI-A2 a propósito: si un ítem no tiene match, el acceso
- *       a `.aplicaPublicidad` sobre undefined lanza el mismo TypeError que
- *       lanzaba `resultado[0].aplicaPublicidad`. Corregirlo es Grupo A.
+ *       ARI-A2 (aprobado por Tekiio 2026-10-14, aplicado): B1 había preservado
+ *       el TypeError que se producía al acceder a `.aplicaPublicidad` de un
+ *       ítem sin match. Ahora se valida antes de acceder: la línea se omite y
+ *       se registra con log.error, en vez de abortar toda la ejecución.
  *   B2  los line counts se leen ANTES de ejecutar las SS de mapeo: la SS de
  *       cuentas (y l598esOneworld, que sólo alimenta su filtro) corre sólo si
  *       hay líneas de gasto; la de tax codes sólo si hay alguna línea.
@@ -45,7 +46,7 @@
  *       NO se cambió el '' que afterSubmit pasa como "array" de resultados de
  *       expensas para la sublista item: pasar [] alteraría la conducta en un
  *       borde (ítem sin tax code y con cuenta), hoy inalcanzable en la
- *       práctica pero no demostrable para todo tipo de registro. Va con ARI-A2.
+ *       práctica pero no demostrable para todo tipo de registro. Sigue sin cambiarse (no forma parte de ARI-A2).
  *
  * DESVIO DE DEPLOY (no de refactor): los IDs de parametro de script son unicos
  * en la cuenta y pertenecen al Script record ORIGINAL; el _REF no puede
@@ -54,10 +55,13 @@
  * este archivo reemplace al original, volver los valores de esas constantes a
  * los IDs originales. Ver docs/carga-y-deploy-de-scripts.md.
  *
+ * Unidad 4 — Grupo A aprobado por Tekiio (2026-10-14), aplicado:
+ *   A2  validación previa del resultado de la búsqueda de publicidad (ver B1).
+ *   B3  paginación de las 2 búsquedas ad-hoc (obtenerTodosLosResultados). Cambia
+ *       el resultado sólo con >1000 filas; mismo patrón que TRS-A7 / CRT-A7 /
+ *       CDF-A4. Reclasificado a Grupo A el 2026-09-15.
+ *
  * Fuera de este refactor, con motivo:
- *   B3  paginar las 2 búsquedas ad-hoc: cambia el resultado con >1000 filas.
- *       Es el mismo patrón que TRS-A7 / CRT-A7 / CDF-A4, todos Grupo A ->
- *       se reclasifica y va al registro de aprobaciones.
  *   B4  SS -> SuiteQL/Workbooks: 🔴, requiere aprobación de Tekiio.
  *   B5  usar el `.array` de searchSavedPro: ese array se indexa por NOMBRE de
  *       columna y este script lee por POSICIÓN; sin la definición de las 2 SS
@@ -201,6 +205,49 @@ define(
         }
 
         /**
+         * ARI-B3 — Corre una búsqueda creada con search.create paginando hasta agotar
+         * resultados. (aprobado por Tekiio, 2026-10-14)
+         *
+         * Las 2 búsquedas ad-hoc de aplicarRubroPublicidad leían `getRange({start:0, end:1000})`
+         * de una sola vez: pasadas las 1.000 filas, el resto quedaba sin considerar y sin aviso.
+         * Paginar también quita la causa más probable de ARI-A2 (los ítems posteriores a la
+         * fila 1000 no tenían match). ARI-B3 se reclasificó a Grupo A el 2026-09-15.
+         *
+         * Mismo patrón que TRS-A7 (correrSavedSearchPaginada). No se usan
+         * utilities.searchSaved / searchSavedPro por los motivos documentados allí.
+         * Por debajo de 1.000 filas devuelve lo mismo que antes, en el mismo orden.
+         *
+         * @param {search.Search} searchObj
+         * @returns {search.Result[]} todos los resultados, en el orden de la búsqueda
+         */
+        function obtenerTodosLosResultados(searchObj) {
+
+            const PASO = 1000; // máximo que admite getRange por llamada
+
+            const resultSet = searchObj.run();
+
+            const resultados = [];
+            let indice = 0;
+            let pagina;
+
+            do {
+                pagina = resultSet.getRange({ start: indice, end: indice + PASO });
+
+                if (pagina && pagina.length > 0) {
+                    for (let i = 0; i < pagina.length; i++) {
+                        resultados.push(pagina[i]);
+                    }
+                }
+
+                indice += PASO;
+
+                // Una página incompleta ya es la última.
+            } while (pagina && pagina.length === PASO);
+
+            return resultados;
+        }
+
+        /**
          * ARI-D4 — "Modificación Publicidad", extraída de afterSubmit sin reordenar efectos.
          * Sólo para vendorbill / vendorcredit: los ítems marcados con
          * custitem_l598_aplica_publicidad y los gastos cuya cuenta tiene
@@ -240,11 +287,8 @@ define(
                         ]
                 });
 
-                // ARI-B3 (fuera de alcance, reclasificado a Grupo A): sin paginar, como el original.
-                const searchResult = transactionSearchObj.run().getRange({
-                    start: 0,
-                    end: 1000
-                });
+                // ARI-B3 (aprobado por Tekiio, 2026-10-14): paginada hasta agotar resultados.
+                const searchResult = obtenerTodosLosResultados(transactionSearchObj);
 
                 const jsonItemsRubros = [];
                 searchResult.forEach(function (result) {
@@ -265,10 +309,15 @@ define(
                         line: i
                     });
 
-                    // ARI-A2 preservado: sin match, `resultado` es undefined y la siguiente
-                    // línea lanza el mismo TypeError que `resultado[0].aplicaPublicidad`.
+                    // ARI-A2 (aprobado por Tekiio, 2026-10-14): validar antes de acceder.
+                    // Antes, un ítem sin match en la búsqueda lanzaba TypeError, el catch
+                    // global lo registraba y save() no corría: se perdían TODOS los rubros
+                    // de la ejecución. Ahora esa línea se omite con un log.error y el resto
+                    // se guarda. La evaluación de `aplicaPublicidad` no cambia.
                     const resultado = buscarEnIndice(itemsPorId, idItem);
-                    if (resultado.aplicaPublicidad) {
+                    if (!resultado) {
+                        log.error('aplicarRubroPublicidad', 'ARI-A2 item sin resultado en la busqueda de publicidad: item=' + idItem + ' linea=' + i);
+                    } else if (resultado.aplicaPublicidad) {
                         objRecord.setSublistValue({
                             sublistId: "item",
                             fieldId: "custcol_l598_rubro_iva",
@@ -294,11 +343,8 @@ define(
                             ]
                     });
 
-                    // ARI-B3 (fuera de alcance): sin paginar, como el original.
-                    const searchResultCuentas = accountSearchObj.run().getRange({
-                        start: 0,
-                        end: 1000
-                    });
+                    // ARI-B3 (aprobado por Tekiio, 2026-10-14): paginada hasta agotar resultados.
+                    const searchResultCuentas = obtenerTodosLosResultados(accountSearchObj);
 
                     const jsonExpenseRubros = [];
                     searchResultCuentas.forEach(function (result) {
