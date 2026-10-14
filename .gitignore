@@ -1,2 +1,5 @@
 # Cache de tooling local (skill-registry), no es del proyecto
 .atl/
+
+# Snapshot of the account originals downloaded 2026-10-07 (drift evidence, plan-pruebas §0.bis); not reproducible, kept local only
+docs/evidencia/
