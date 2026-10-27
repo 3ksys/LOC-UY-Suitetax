@@ -236,7 +236,14 @@ Caso conocido — Calcular Retenciones (SS)V2: `beforeLoad` asigna `form.clientS
 3. **Si el `_REF` pasa a la misma carpeta que la lib, o reemplaza al original**, volver a `"./L598 - Calcular Retenciones (LIBS)V2.js"`.
 4. Al deployar cualquier `_REF`, buscar `clientScriptModulePath`, `require(` y `define([` con `./` o `../` y revisar cada ruta relativa.
 
-**Revisión de los 7 `_REF` (2026-10-27):** Calcular Retenciones (resuelto con `CLIENT_SCRIPT_LIBS`) y **Conexion Directa FE** (pendiente: línea 300, `formTransaction.clientScriptModulePath = './L598 - Conexion Directa FE (CL).js'`, mismo problema; falta ubicar la carpeta real del `(CL)`). Asignar Rubro IVA, Generación TXT, Setear Unidad Indexada, Seteo de Tax Codes y Transacción (Servidor) no tienen rutas relativas a módulos.
+**Revisión de los 7 `_REF` (2026-10-27):**
+
+| `_REF` | Ruta relativa del original | Constante en el `_REF` | Ubicación real del módulo |
+|---|---|---|---|
+| Calcular Retenciones (SS)V2 | `./L598 - Calcular Retenciones (LIBS)V2.js` | `CLIENT_SCRIPT_LIBS` | `SuiteBundles > Bundle 475567` (archivo id 56) |
+| Conexion Directa FE (SS) | `./L598 - Conexion Directa FE (CL).js` (botón **Generar CAE 2.0**, `generarCAE`) | `CLIENT_SCRIPT_CL` | `SuiteBundles > Bundle 475538` (archivo id 33) |
+
+Ojo: **no son el mismo bundle.** Asignar Rubro IVA, Generación TXT, Setear Unidad Indexada, Seteo de Tax Codes y Transacción (Servidor) no tienen rutas relativas a módulos.
 
 ## 4. Verificación
 

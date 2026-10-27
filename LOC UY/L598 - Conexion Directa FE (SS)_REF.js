@@ -103,6 +103,17 @@
  * dia que este archivo reemplace al original, volver los valores de esas
  * constantes a los IDs originales. Ver docs/carga-y-deploy-de-scripts.md.
  *
+ * DESVIO DE DEPLOY #2 (ruta del client script): beforeLoad asigna
+ * formTransaction.clientScriptModulePath a "L598 - Conexion Directa FE (CL).js",
+ * que define generarCAE (el boton "Generar CAE 2.0"). El original la referencia
+ * con ruta RELATIVA ("./...") porque vive en la misma carpeta que el (CL)
+ * (SuiteBundles/Bundle 475538). El _REF esta en SuiteScripts/Refactor LOC URU -
+ * Mobeats, donde la ruta relativa no resuelve. Por eso usa la constante
+ * CLIENT_SCRIPT_CL con ruta ABSOLUTA. Si el (CL) se MUEVE de carpeta, o si este
+ * archivo pasa a su carpeta (o reemplaza al original), actualizar la constante
+ * o volver a "./L598 - Conexion Directa FE (CL).js". Mismo caso que el _REF de
+ * Calcular Retenciones (ver docs/carga-y-deploy-de-scripts.md, 3.ter).
+ *
  * Fuera de este refactor, con motivo:
  *   B1 (SuiteQL para customsearch_l598_trans_gen_cae_con_dire, 89 columnas
  *   posicionales), B5 (doble load + doble save) y D1 (division de
@@ -148,6 +159,10 @@
         const PARAM_REALIZAR_AGRUPACION             = 'custscript_l598_cdf_ref_agrupacion';
         const PARAM_RAZON_GLOBAL                    = 'custscript_l598_cdf_ref_raz_glob_co';
         const PARAM_FORMA_PAGO_MULTIPLE             = 'custscript_l598_cdf_ref_form_pag_mu';
+
+        // DESVÍO DE DEPLOY #2: el original usa './L598 - Conexion Directa FE (CL).js' (relativa).
+        // Ruta absoluta del (CL) en el File Cabinet; actualizar si se lo mueve. Ver header.
+        const CLIENT_SCRIPT_CL = '/SuiteBundles/Bundle 475538/L598 - Conexion Directa FE (CL).js';
 
         const camposInfoFE = [
             'idInterno',
@@ -297,7 +312,7 @@
                                 if (!utilities.isEmpty(docXML)) {
                                     try {
                                         log.debug(proceso, "Se genera boton correctamente.")
-                                        formTransaction.clientScriptModulePath = './L598 - Conexion Directa FE (CL).js';
+                                        formTransaction.clientScriptModulePath = CLIENT_SCRIPT_CL;
                                         formTransaction.addButton({
                                             id: 'custpage_l598_boton_generar_cae_conexion_directa',
                                             label: 'Generar CAE 2.0',
