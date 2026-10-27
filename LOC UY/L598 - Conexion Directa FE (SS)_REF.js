@@ -1400,6 +1400,8 @@
         }
 
         function envioEmail(errorProceso, CAENRO, tipoDocumento, codigoSerie, sucursal, internalId, subsidiaria, idLog, message){
+            // CDF-A2: el catch usaba `proceso`, que no existe en este scope (el de afterSubmit es let).
+            const proceso = 'envioEmail';
             try {
                 log.debug("Inicio envioEmail", "Se inicia el envioEmail");
                 var filtroConf = [];
@@ -1467,8 +1469,10 @@
                         }
                         log.debug("body", body);
 
+                        // CDF-A2: userActual e isEmpty no estaban definidos (ReferenceError antes de email.send).
+                        const userActual = runtime.getCurrentUser().email;
                         var arrRec = [emailUsuario]
-                        if (!isEmpty(userActual)) {
+                        if (!utilities.isEmpty(userActual)) {
                             var arrRec = [emailUsuario, userActual]
                         }
 
