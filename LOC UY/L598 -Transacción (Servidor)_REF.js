@@ -484,7 +484,8 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
 
             const partes = String(numero).split(".");
             parteEntera = partes[0];
-            const parteDecimal = partes[1] ?? "00";
+            // TRS-A6: normalizar los centavos a 2 digitos (String(10.5) -> "5" daba "CON 5/100").
+            const parteDecimal = (partes[1] ?? "00").padEnd(2, "0").slice(0, 2);
             parteEnteraLetras = "";
 
             // convierto la parte entera en letras
