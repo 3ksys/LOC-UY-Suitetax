@@ -12,8 +12,8 @@
  * Unidad 1 - C + D mecanicos:
  *   C1  var -> const/let en todo el archivo (0 var restantes).
  *   C2  getParameter("custscript...") -> {name}; getSublistValue posicional ->
- *       {sublistId, fieldId, line}. NO se toca removeLine(sublista, 1):
- *       su semantica esta reservada a CRT-A11 (Grupo A).
+ *       {sublistId, fieldId, line}. removeLine pasa a la forma {sublistId, line} (CRT-A11, Grupo A,
+ *       aplicado: ver abajo).
  *   C4  eliminados los bloques COMENTADOS con restos SuiteScript 1.0
  *       (nlapi*, getLineItemCount). No habia ninguna llamada 1.0 viva.
  *   D2  isEmptyOK era identica a isEmpty -> se elimina y sus 3 usos pasan a
@@ -48,7 +48,7 @@
  *   D5  declaradas con let las ~21 variables implicitas de getNumberLiteral
  *       (fugas al scope global). Verificado que la rama n>=1e9 no comparte
  *       estado con las recursiones. Se quitaron los eslint-disable/enable.
- *       NO se toco `if (mdata != "\t")` (CRT-A8, Grupo A).
+ *       `if (mdata != "\t")` se corrigio en CRT-A8 (Grupo A, aplicado).
  *   D9  beforeLoad recorria todos los resultados sobrescribiendo las mismas
  *       variables -> lectura directa de la ultima fila (misma semantica).
  *
@@ -279,7 +279,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
         }
       }
     } catch (err) {
-      log.error(proceso, "Error NetSuite Excepción letras - Detalles: " + error.message);
+      log.error(proceso, "Error NetSuite Excepción letras - Detalles: " + (err.message || err));
     }
 
     return null;
@@ -310,7 +310,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
 
       if (isNaN(n)) {
 
-        alert("La Cantidad debe ser un valor NumÃ©rico.");
+        log.error(proceso, "La Cantidad debe ser un valor NumÃ©rico.");
         return null;
       }
       m0 = parseInt(n / 1000000000000);
@@ -372,7 +372,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
         mdata = letras(cmi, dmi, umi);
         cdata = letras(ce, de, un);
 
-        if (mdata != "	") {
+        if (mdata !== "") {
           if (n == 1000000)
             mdata = mdata.replace("UNO", "UN") + "DE";
           else
@@ -399,7 +399,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
       if (n == 0)
         return " CERO";
     } catch (err) {
-      log.error(proceso, "Error NetSuite Excepción getNumberLiteral - Detalles: " + error.message);
+      log.error(proceso, "Error NetSuite Excepción getNumberLiteral - Detalles: " + (err.message || err));
     }
 
     return "NO DISPONIBLE";
@@ -492,7 +492,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
         log.error(proceso, "Error al obtener el monto escrito - No se recibió ningún monto para transformar a letras.");
       }
     } catch (err) {
-      log.error(proceso, "Error NetSuite Excepción getNumeroEnLetras - Detalles: " + error.message);
+      log.error(proceso, "Error NetSuite Excepción getNumeroEnLetras - Detalles: " + (err.message || err));
     }
 
     return null;
@@ -2238,7 +2238,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
     //SI LA TRANSACCION CORRESPONDE A UNA URU-RESGUARDO Y ESTA VINCULADA A ALGUNA TRANSACCION DE URU-RETENCION DETALLE CON EL CAMPO TIPO TRANSACCION NO VACIO
     //Se valida que el contexto de ejecucion sea USERINTERFACE debido a que es necesario que este script se ejecute en los contextos ya establecidos (mapreduce)
     //Y que en dichos contextos el proceso continue su flujo normal, sin realizar la validacion y generar error
-    if (!isEmpty(paramEjecutarValidacion) && paramEjecutarValidacion === true && recType == "customtransaction_l598_resguardos" && contextType == "edit" && runtime.executionContext == "userinterface") {
+    if (!isEmpty(paramEjecutarValidacion) && paramEjecutarValidacion === true && recType == "customtransaction_l598_resguardos" && contextType == "edit" && runtime.executionContext === runtime.ContextType.USER_INTERFACE) {
       const filters = new Array();
       filters[0] = search.createFilter({
         name: "custrecord_l598_ret_detalle_resguardo",
@@ -2277,7 +2277,9 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
    * D7 - Extraido de beforeSubmit. Al eliminar una URU-Retencion (o su
    * anulacion) intenta borrar los URU-Retencion Detalle asociados y
    * desmarca el calculo automatico en la factura vinculada.
-   * NOTA: objRecord.delete(...) es CRT-A2 (Grupo A) y se conserva tal cual.
+   * NOTA: CRT-A2 (Grupo A, aprobado por Tekiio Desarrollo): objRecord.delete(...)
+   * no existe; se usa record.delete({type, id}). Cambio de comportamiento: ahora
+   * los URU-Retencion Detalle SI se borran.
    */
   function eliminarDetallesDeUruRetencion(objRecord) {
     const idRec = objRecord.getValue("custbody_l598_resguardo_fact_vinculada");
@@ -2291,7 +2293,10 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
         line: i
       });
       try {
-        objRecord.delete("customrecord_l598_ret_detalle", idRetDetalle);
+        record.delete({
+          type: "customrecord_l598_ret_detalle",
+          id: idRetDetalle
+        });
       } catch (e) {
         log.error("l598beforeSubmitTransaction", "Ocurrio un error al borrar URU-Retencion Detalle asociadas al registro URU-Retencion: " + e.message);
       }
@@ -2314,8 +2319,9 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
    * B3 - el dedup filter+indexOf O(n^2) se reemplazo por Set (misma primera
    * aparicion, mismo orden). El submitFields del loop es una escritura
    * necesaria y se mantiene.
-   * NOTA: removeLine(sublista, 1) con indice fijo es CRT-A11 (Grupo A) y se
-   * conserva textualmente.
+   * NOTA: CRT-A11 (Grupo A, aprobado por Tekiio Desarrollo): las lineas de la
+   * sublista RefCFE se eliminan en orden descendente con removeLine({sublistId,
+   * line}); antes el indice fijo 1 hacia fallar el save().
    */
   function limpiarResguardoEliminado(objRecord, recType) {
     const idResguardo = objRecord.id;
@@ -2402,8 +2408,11 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
 
       if (!isEmpty(record_transaccion)) {
         try {
-          for (let k = 0; !isEmpty(sublistaRefCFELines) && k < sublistaRefCFELines; k++) {
-            record_transaccion.removeLine(sublistaRefCFE, 1);
+          for (let k = sublistaRefCFELines - 1; !isEmpty(sublistaRefCFELines) && k >= 0; k--) {
+            record_transaccion.removeLine({
+              sublistId: sublistaRefCFE,
+              line: k
+            });
           }
           const _idResguardo = record_transaccion.save();
         } catch (e) {
@@ -2536,10 +2545,10 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
 
   function calcularGenerarResguardoAutomaticamente(subsidiaria) {
     let calcular_generar_resguardo_automaticamente = "F";
-    const filters = ["isinactive", "is", "F"];
-    
+    const filters = [["isinactive", "is", "F"]];
+
     if (!isEmpty(subsidiaria)) {
-      filters.push("custrecord_l598_conf_proc_ret_subsidiari", "is", subsidiaria);
+      filters.push("AND", ["custrecord_l598_conf_proc_ret_subsidiari", "is", subsidiaria]);
     }
 
     const results = search.create({
@@ -2564,10 +2573,10 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
   
     function aplicarRetencionFacturaAutomaticamente(subsidiaria) {
       let aplicar_retencion_factura_automaticamente = "F";
-      const filters = ["isinactive", "is", "F"];
-      
+      const filters = [["isinactive", "is", "F"]];
+
       if (!isEmpty(subsidiaria)) {
-        filters.push("custrecord_l598_conf_proc_ret_subsidiari", "is", subsidiaria);
+        filters.push("AND", ["custrecord_l598_conf_proc_ret_subsidiari", "is", subsidiaria]);
       }
 
       const results = search.create({
