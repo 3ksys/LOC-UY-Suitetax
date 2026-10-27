@@ -221,6 +221,23 @@ Consecuencia: si el `_REF` se deploya sin parámetro, `getParameter` devuelve `n
 
 Límite: el ID completo no puede pasar de 40 caracteres (`custscript_` son 11).
 
+## 3.ter Rutas relativas a módulos: el `_REF` vive en otra carpeta
+
+> 🔴 **Verificado en la cuenta el 2026-10-27** con el `_REF` de Calcular Retenciones (script record 707).
+
+El `_REF` está en `SuiteScripts > Refactor LOC URU - Mobeats`; el original, en su carpeta de bundle. Toda **ruta relativa** (`./archivo.js`) que el original resuelve por compartir carpeta con el módulo **no resuelve en el `_REF`**.
+
+Caso conocido — Calcular Retenciones (SS)V2: `beforeLoad` asigna `form.clientScriptModulePath = "./L598 - Calcular Retenciones (LIBS)V2.js"` (original, línea 1015). La lib está en `SuiteBundles > Bundle 475567` (archivo id 56). Síntoma en el Execution Log del `_REF`: `Module does not exist: /SuiteScripts/Refactor LOC URU - Mobeats/L598 - Calcular Retenciones (LIBS)V2.js`. La lib define `calcularRetencionesl598`, la función del botón **Calcular Retenciones**: sin la ruta correcta ese botón no funciona en el `_REF`.
+
+**Regla:**
+
+1. El `_REF` usa una constante (`CLIENT_SCRIPT_LIBS`) con la **ruta absoluta** de la lib: `/SuiteBundles/Bundle 475567/L598 - Calcular Retenciones (LIBS)V2.js`. Lleva un comentario `DESVÍO DE DEPLOY #2` y está explicado en el header del archivo.
+2. **Si la lib se mueve de carpeta**, actualizar la constante.
+3. **Si el `_REF` pasa a la misma carpeta que la lib, o reemplaza al original**, volver a `"./L598 - Calcular Retenciones (LIBS)V2.js"`.
+4. Al deployar cualquier `_REF`, buscar `clientScriptModulePath`, `require(` y `define([` con `./` o `../` y revisar cada ruta relativa.
+
+**Revisión de los 7 `_REF` (2026-10-27):** Calcular Retenciones (resuelto con `CLIENT_SCRIPT_LIBS`) y **Conexion Directa FE** (pendiente: línea 300, `formTransaction.clientScriptModulePath = './L598 - Conexion Directa FE (CL).js'`, mismo problema; falta ubicar la carpeta real del `(CL)`). Asignar Rubro IVA, Generación TXT, Setear Unidad Indexada, Seteo de Tax Codes y Transacción (Servidor) no tienen rutas relativas a módulos.
+
 ## 4. Verificación
 
 1. Abrir el Script Deployment guardado y confirmar: `Status = Testing`, `Deployed` tildado, `Applies To` correcto y en **Internal Roles** únicamente `URU-Contador Suitetax (Mobeats)` (con `ALL INTERNAL ROLES` **destildado**).

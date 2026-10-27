@@ -69,6 +69,17 @@
  * este archivo reemplace al original, volver los valores de esas constantes a
  * los IDs originales. Ver docs/carga-y-deploy-de-scripts.md.
  *
+ * DESVIO DE DEPLOY #2 (ruta del client script): beforeLoad asigna
+ * form.clientScriptModulePath a "L598 - Calcular Retenciones (LIBS)V2.js", que
+ * define calcularRetencionesl598 (el boton "Calcular Retenciones"). El original
+ * la referencia con ruta RELATIVA ("./...") porque vive en la misma carpeta que
+ * la lib (SuiteBundles/Bundle 475567). El _REF esta en SuiteScripts/Refactor LOC
+ * URU - Mobeats, donde la ruta relativa no resuelve ("Module does not exist",
+ * verificado 2026-10-27). Por eso usa la constante CLIENT_SCRIPT_LIBS con ruta
+ * ABSOLUTA. Si la lib se MUEVE de carpeta, o si este archivo pasa a su carpeta
+ * (o reemplaza al original), actualizar la constante o volver a
+ * "./L598 - Calcular Retenciones (LIBS)V2.js".
+ *
  * Fuera de este refactor, con motivo:
  *   B1 (SuiteQL para customsearch_l598_transaction_det_ret) y D1 (helper
  *   parametrizado de los 4 bloques de posteo fiscal): 🔴, requieren aprobacion.
@@ -89,6 +100,9 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
   // 'custscript_l598_calc_ret_val_resgret'. Ver header.
   const PARAM_PROCESAR_PENDIENTES_APROBACION = 'custscript_l598_calc_ret_ss_pfp2_ref';
   const PARAM_VALIDAR_RESGUARDO_RETENCION = 'custscript_l598_calc_ret_val_resgret_ref';
+  // DESVÍO DE DEPLOY #2: el original usa "./L598 - Calcular Retenciones (LIBS)V2.js" (relativa).
+  // Ruta absoluta de la lib en el File Cabinet; actualizar si se la mueve. Ver header.
+  const CLIENT_SCRIPT_LIBS = '/SuiteBundles/Bundle 475567/L598 - Calcular Retenciones (LIBS)V2.js';
   /*global define */
   /* eslint-disable no-magic-numbers */
   function isEmpty(value) {
@@ -1013,7 +1027,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
         if ((!isEmpty(codRetIRPF) || !isEmpty(codRetIRNR) || !isEmpty(codRetIVA) || !isEmpty(codRetIRAE)) && isEmpty(retencion)) {
           log.debug("l598beforeLoad log6", "RecId: " + recId + " - contextType: " + contextType + " - CodRetIRPF: " + codRetIRPF + " - CodRetIRNR: " + codRetIRNR + " - CodRetIVA: " + codRetIVA + " - CodRetIRAE: " + codRetIRAE + " - URU-Retencion: " + retencion);
 
-          form.clientScriptModulePath = "./L598 - Calcular Retenciones (LIBS)V2.js";
+          form.clientScriptModulePath = CLIENT_SCRIPT_LIBS;
           form.addButton({
             id: "custpage_calcular_retenciones",
             label: "Calcular Retenciones",
