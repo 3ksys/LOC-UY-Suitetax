@@ -311,7 +311,8 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
       if (isNaN(n)) {
 
         log.error(proceso, "La Cantidad debe ser un valor NumÃ©rico.");
-        return null;
+        // CRT-A6: el alert() lanzaba ReferenceError y el catch terminaba devolviendo este mismo valor.
+        return "NO DISPONIBLE";
       }
       m0 = parseInt(n / 1000000000000);
       rm0 = n % 1000000000000;
@@ -372,11 +373,11 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
         mdata = letras(cmi, dmi, umi);
         cdata = letras(ce, de, un);
 
-        if (mdata !== "") {
-          if (n == 1000000)
-            mdata = mdata.replace("UNO", "UN") + "DE";
-          else
-            mdata = mdata.replace("UNO", "UN") + " MIL ";
+        // CRT-A8: " MIL " solo si hay miles; el 1.000.000 exacto conserva su "DE" como antes.
+        if (n == 1000000) {
+          mdata = mdata.replace("UNO", "UN") + "DE";
+        } else if (mdata !== "") {
+          mdata = mdata.replace("UNO", "UN") + " MIL ";
         }
 
         return (mldata + mdata + cdata);
