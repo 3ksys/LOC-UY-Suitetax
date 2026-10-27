@@ -80,3 +80,31 @@ Quedan **104 `var`**, cada uno con motivo: 33 nombres redeclarados en la misma f
 - [ ] Deploy aislado (Status `Testing`, Audience rol de pruebas) — necesita inventario de deployments (duda #7 del informe) y los logs de context filtering (CDF-A7).
 - [ ] Caracterización: **Remito** (21.6s, el pico) y Factura de Venta nuevas — nunca re-guardar las bloqueadas por CAE 100000. Comparar **JSON y XML persistidos byte a byte** (el output se genera al guardar, sin CAE).
 - [ ] Medición GU: esperado ahorro **real pero acotado** — 1 búsqueda por `afterSubmit` (B3) y 1 `config.load` por cada log FE (B4, hasta 24 por guardado). El salto es B1 (🔴).
+
+### Verificación en la cuenta — 2026-10-27 (CDF-A2/A8 y desvío de deploy #2)
+
+> 🔴 **El `_REF` de CDF no puede ejecutarse con SICFE: está construido sobre una versión del script anterior al soporte de SICFE.** Bloquea la verificación del CDF en la cuenta hasta que se rebase o Tekiio confirme la versión de referencia.
+
+**Qué se hizo (y quedó en el repo y en el File Cabinet, archivo id 15574):**
+- CDF-A2 y CDF-A8 aplicados (commits `2b5c36f`, `cbe90dc`). CDF-C2 ya estaba hecho.
+- Desvío de deploy #2: ruta absoluta del client script `(CL)` (`CLIENT_SCRIPT_CL`, commit `9971ad0`). El `(CL)` está en `SuiteBundles > Bundle 475538` (archivo id 33). Ver `docs/carga-y-deploy-de-scripts.md`, 3.ter.
+
+**Qué se encontró al intentar verificarlo (solo lectura, salvo lo indicado abajo):**
+
+1. **Sin configuración activa, el `beforeLoad` falla para todo tipo de comprobante.** La búsqueda guardada `customsearch_l598_proveedor_fe_ss` (id 164) exige `Inactive = F` en el proveedor y en su Configuración Factura Electrónica. Hoy la config SICFE (rectype 55, id 4) está inactiva (modificada 10/09/2026 por Joshep Romero) y los proveedores TAFACE (rectype 160, ids 1 y 3) también. El proveedor SICFE (id 2) está activo y tiene **Remito** (ids 22 y 23, duplicado) y **Remito Exportación** (id 27) mapeados. No hay que crear mapeos.
+2. **Con la config SICFE activa, el `_REF` falla igual, más adelante:** `Excepción al obtener configuración de FE - Wrong parameter type: id is expected as integer`.
+   - Causa: la búsqueda guardada de la cuenta tiene **46 columnas**; `camposInfoFE` del código tiene **42** y lee por posición. La cuenta agregó 4 columnas SICFE (`USUARIO SICFE`, `PASSWORD SICFE`, `URL SERVICIO SICFE`, `TENANTS SICFE`) en las posiciones 24-27, que el código del repo no contempla (el repo no menciona SICFE ni en el original ni en el `_REF`).
+   - Todo lo posterior queda corrido 4 lugares: en la posición 35 (`indicadorFacturacion`) llega el Domicilio Fiscal ("Montevideo") y el `search.lookupFields({type: 'customrecord_l598_ind_fact_det', id: ...})` falla.
+   - Es la deriva repo ↔ cuenta del handoff (CDF +175/-46 líneas con SICFE en la cuenta). El CDF original de la cuenta sí funcionaría.
+3. **Efecto de ver remitos:** el `beforeLoad` del CDF (original, `customdeploy2` en Item Fulfillment, y `_REF`) llama a `grabarError` y **crea registros de log FE** al solo abrir la transacción: cabeceras 3197-3201 y detalles 3206-3210. El usuario aceptó que queden.
+
+**Cambios hechos en la cuenta durante la verificación (reversibles, ya revertidos), con autorización explícita del usuario:**
+- Configuración SICFE (id 4) activada y desactivada en dos ciclos cortos (~1 min y ~2 min) el 27/10/2026 entre 6:13 y 6:21 pm. Quedó **inactiva**, como estaba. Cambió el "Last modified" (ahora 6:21 pm por Sebastian Benitez).
+- "Generar CAE automáticamente" estaba sin marcar y la config apunta a un entorno de testing de SICFE.
+
+**Pendiente (Tekiio / decisión):**
+- [ ] Confirmación escrita de Tekiio de qué versión del CDF es la referencia (cuenta con SICFE o repo).
+- [ ] **Rebasar el `_REF` de CDF sobre el CDF actual de la cuenta** (incluye SICFE) y reaplicar B/C/D y los Grupo A aprobados.
+- [ ] Verificar el botón "Generar CAE 2.0" (`CLIENT_SCRIPT_CL`) cuando exista un par proveedor + configuración activo y el `_REF` lea bien las columnas.
+- [ ] Mapeo de Remito duplicado en el proveedor SICFE (ids 22 y 23) y en TAFACE (ids 10 y 11): avisar a Tekiio.
+- [ ] Registros de log FE 3197-3201 / 3206-3210 creados por las pruebas: aceptados, limpiar solo si Tekiio lo pide.
