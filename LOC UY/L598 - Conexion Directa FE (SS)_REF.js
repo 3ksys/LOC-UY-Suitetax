@@ -2689,7 +2689,7 @@
                                                                                 mensajeError = "Falta la Siguiente Informacion de Para la Línea de Subtotal: ";
                                                                                 if (utilities.isEmpty(descripcionLinea))
                                                                                     mensajeError = mensajeError + "Descripcion del Subtotal / ";
-                                                                                if (utilities.isEmpty(descripcionLinea))
+                                                                                if (utilities.isEmpty(transImporte))
                                                                                     mensajeError = mensajeError + "Importe del Subtotal / ";
 
                                                                                 mensajeError = mensajeError + " Para la Linea Numero : " + k;
@@ -2956,7 +2956,7 @@
                                                                             //mensajeError = mensajeError + " - Número de línea : " + k;
                                                                             mensajeError = mensajeError + " - Número de línea : " + subListaContador;
                                                                             mensajeError = mensajeError + " - ID transacción: " + idTransaccion;
-                                                                            log.error(proceso, mensaje);
+                                                                            log.error(proceso, mensajeError);
                                                                         }
                                                                     } else {
                                                                         // Error Obteniendo Informacion de la Linea de Percepcion/Retencion/Credito Fiscal
@@ -2964,7 +2964,7 @@
                                                                         mensajeError = "Error obteniendo información de la línea de retención - Número de línea: " + subListaContador;
                                                                         //mensajeError = "Error obteniendo información de la línea de retención - Número de línea: " + k;
                                                                         mensajeError = mensajeError + " - ID transacción: " + idTransaccion;
-                                                                        log.error(proceso, mensaje);
+                                                                        log.error(proceso, mensajeError);
                                                                     }
                                                                 }
                                                                 // FIN - Agregar Informacion de Percepcion
@@ -2981,7 +2981,7 @@
                                                                 mensajeError = mensajeError + "- Numero de linea : " + subListaContador;
                                                                 //mensajeError = mensajeError + "- Numero de linea : " + k;
                                                                 mensajeError = mensajeError + " - ID transacción : " + idTransaccion;
-                                                                log.error(proceso, mensaje);
+                                                                log.error(proceso, mensajeError);
                                                             }
                                                         } // FIN del For para verificar sublista detalles resguardos
                                                         log.debug("Line 2755", "Se termino el bucle for");
