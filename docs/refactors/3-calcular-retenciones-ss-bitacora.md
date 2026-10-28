@@ -108,3 +108,25 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 **Pendiente (Tekiio):**
 - [ ] Decidir cuál es la versión correcta: restaurar las columnas faltantes de `customsearch_l598_transaction_det_ret` o actualizar la librería del bundle.
 - [ ] Hasta entonces, probar A1/A2/A3/A11 por otra vía (URU-Retención / URU-Resguardo directos, o la rama automática en `afterSubmit` con `custrecord_l598_conf_proc_ret` configurado).
+
+#### Intento de ejercitar A1/A2/A3/A11 por otras vías — 2026-10-28 (solo lectura; nada guardado)
+
+- **Camino automático (`afterSubmit`) también bloqueado:** lee la misma búsqueda `customsearch_l598_transaction_det_ret` por posición (`columns[11]` = estado, `[12..15]` = códigos, `[17..]` = retención/dirección…; líneas ~1100-1124 del `_REF`), así que no puede crear retenciones con la búsqueda actual de la cuenta. Toda creación de URU-Retención (botón o automática) queda bloqueada hasta que se alinee búsqueda y librería.
+- **A1 (ERR002 al editar un Resguardo ya usado):** hay muchos Resguardos con detalle de retención (búsqueda `URU-RETENCION DETALLE W URU-RESGUARDO`, 847 detalles; p. ej. URU-Resguardo #1, #4, #9, #11…). La búsqueda `URU-Resguardos Pendiente de Envío` (111 resultados) **no sirve para elegir candidato**: el #9 (id interno 1402) figura ahí pero está en estado **"Informado a DGI"** (documento fiscal ya firmado). **No se guardó**: el handoff prohíbe re-guardar documentos fiscales. Para probar A1 hay que encontrar un Resguardo con detalle que **no esté informado a DGI**.
+- **A2 y A11 requieren borrar** una URU-Retención / un Resguardo (borrado permanente de datos): no lo hace el asistente; si se prueban, lo borra una persona sobre un registro de prueba.
+- Verificación offline de los 6 CRT con `tools/arnes-grupo-a.js` (A11 contra el comportamiento documentado de `removeLine`, no contra NetSuite).
+
+**Estado de prueba por hallazgo (28/10/2026):**
+
+| ID | Arnés offline | En la cuenta |
+|---|:-:|---|
+| CRT-A1 | ✅ | ❌ falta un Resguardo con detalle no informado a DGI |
+| CRT-A2 | ✅ | ❌ requiere borrar una URU-Retención |
+| CRT-A3 | ✅ (forma del filtro) | ❌ depende de crear retenciones (búsqueda desalineada) |
+| CRT-A6 | ✅ | ❌ ruta de error difícil de provocar |
+| CRT-A8 | ✅ | ❌ requiere generar monto escrito ≥ 1M en URU-Retención/Resguardo |
+| CRT-A11 | ✅ (simulado) | ❌ requiere borrar un Resguardo |
+| CDF-A2 | ✅ | ❌ bloqueado por deriva SICFE |
+| CDF-C2 | ✅ (estático) | n/a |
+| CDF-A8 (extra) | ❌ no cubierto | ❌ bloqueado por deriva SICFE |
+| TRS-A6 (extra) | ✅ | ❌ campo `custbody_l598_monto_escrito` no aplicado a Vendor Credit |
