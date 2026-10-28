@@ -121,3 +121,34 @@ console.log('\n=== CDF-C2 restos SuiteScript 1.0 ===');
   const cuenta = (rev) => (cuerpo(rev).match(/\b(nlapi\w+|nlobj\w+)/g) || []).length;
   fila('apariciones nlapi*/nlobj* (cuerpo)', cuenta(REV.cdf.antes), cuenta(REV.cdf.despues));
 }
+
+// ---- CDF-A8 ----
+// Los cambios viven dentro de buscarInformacionFE (miles de lineas): se extrae el texto REAL de cada tramo y se
+// ejecuta con variables simuladas. El tramo de los 3 log.error se verifica por conteo (no se puede aislar).
+console.log('\n=== CDF-A8 ===');
+{
+  const REV_A8 = { antes: '72b8474', despues: 'cbe90dc' };
+  const fuente = (rev) => execFileSync('git', ['show', `${rev}:${FILE.cdf}`], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  const bloqueSubtotal = (src) => {
+    const m = src.match(/informacionSubTotal = \{\};[\s\S]*?log\.error\(proceso, mensajeError\);\s*\}/);
+    return m ? m[0] : null;
+  };
+  const correr = (src, descripcionLinea, transImporte) => {
+    const bloque = bloqueSubtotal(src);
+    if (!bloque) return 'bloque no encontrado';
+    const logs = [];
+    const utilities = { isEmpty };
+    const objetoRespuesta = { detalleSubtotales: [] };
+    const fn = new Function('utilities', 'descripcionLinea', 'transImporte', 'objetoRespuesta', 'toFixedOK', 'k', 'idTransaccion', 'proceso', 'log',
+      'let informacionSubTotal, errorEncontrado = false, mensajeError = "";\n' + bloque + '\nreturn { errorEncontrado, mensajeError };');
+    const r = fn(utilities, descripcionLinea, transImporte, objetoRespuesta, (v) => v, 3, 55, 'p', { error: (_t, m) => logs.push(m) });
+    return JSON.stringify({ err: r.errorEncontrado, msg: r.mensajeError.replace(/\s+/g, ' ').trim(), log: logs.length });
+  };
+  const A = fuente(REV_A8.antes), D = fuente(REV_A8.despues);
+  fila('subtotal: desc="X", importe vacio', correr(A, 'X', ''), correr(D, 'X', ''));
+  fila('subtotal: desc vacia, importe="5"', correr(A, '', '5'), correr(D, '', '5'));
+  fila('subtotal: ambos vacios', correr(A, '', ''), correr(D, '', ''));
+  fila('subtotal: ambos con valor', correr(A, 'X', '5'), correr(D, 'X', '5'));
+  const cuenta = (src) => (src.match(/log\.error\(proceso, mensaje\);/g) || []).length;
+  fila('log.error(proceso, mensaje) restantes', cuenta(A), cuenta(D));
+}
