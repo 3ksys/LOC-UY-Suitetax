@@ -88,3 +88,23 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 - [ ] ⛔ **Bloqueado** — deploy aislado: el original `customscript_l598_calcular_ret_ss_v2` está **INACTIVE** en la cuenta ([nota del informe](3-calcular-retenciones-ss.md)). Precondición: que Tekiio decida reactivarlo o reorientar el refactor a `Calc Ret. Lineas`.
 - [ ] ⛔ **Bloqueado por lo mismo** — caracterización: los 7 casos del §6, con **UAT Compras 04** como primario. Regla: elegir casos donde CRT-A3/A8 no se disparen.
 - [ ] Medición GU: esperado ahorro **modesto** — 1 búsqueda por guardado de cualquier tipo (B2c) y las repetidas de `esOneworld` en Resguardo. El salto grande es B1 (🔴) y A13.
+
+### Verificación en la cuenta — 2026-10-27/28 (CRT-A1/A2/A3/A6/A8/A11 y botón "Calcular Retenciones")
+
+**Qué quedó hecho:** los 6 Grupo A aplicados al `_REF` (commits `b42c82e`, `513c71c`), archivo en el File Cabinet (id 15573), script record `REF - L598 - Calcular Retenciones (SS)` (id 707, `customscript_l598_calc_ret_ss_ref`) y 4 deployments en Testing (Vendor Bill 353, Vendor Credit 354, URU-Retención 355, URU-Resguardo 356), copiados del original con el rol de Mobeats. Bill de prueba #585 (id 15982, `crt-ref-t1`).
+
+**Verificado en la cuenta:** `beforeSubmit` y `afterSubmit` del `_REF` corren sin errores sobre una factura nueva. El botón **Calcular Retenciones** aparece y ejecuta `calcularRetencionesl598` (el desvío de deploy #2, `CLIENT_SCRIPT_LIBS`, funciona).
+
+> 🔴 **El cálculo no avanza, y no es por el `_REF`: la librería del bundle y la búsqueda guardada de la cuenta están desalineadas.**
+
+- La librería `L598 - Calcular Retenciones (LIBS)V2.js` (SuiteBundles > Bundle 475567, archivo id 56) lee por **posición** la búsqueda guardada `customsearch_l598_transaction_det_ret` (id 20): `columns[11]` = "ESTADO DE APROBACIÓN FACTURA", `[12..15]` = códigos IRAE/IRNR/IRPF/IVA, `[17..]` = retención, dirección, ciudad, país, etc.
+- La búsqueda de la cuenta tiene **otro orden**: el estado de aprobación (valor 2 en la #585) está en la posición 9; en la 11 está el código IRNR (10). Faltan al menos las columnas de **período** y **moneda** que la librería espera entre la 3 y la 7.
+- Resultado: `estado` toma el código IRNR, no vale 2, y sale la alerta "La transacción debe estar en Estado de Aprobación = Aprobada…" (con el parámetro "procesar pendientes" en true o false). No se crea ninguna URU-Retención.
+- Es el mismo tipo de deriva que en CDF (lectura posicional de una búsqueda editada en la cuenta). Explica por qué el CRT V2 original está **inactivo** en la cuenta: con esta búsqueda tampoco podría calcular.
+- No se tocó ni la búsqueda ni la librería.
+
+**Consecuencia:** CRT-A1, A2, A3 y A11 no se pueden ejercitar vía el botón en esta cuenta. A6 y A8 (monto en letras) y A1 se verificaron offline con `tools/arnes-grupo-a.js`.
+
+**Pendiente (Tekiio):**
+- [ ] Decidir cuál es la versión correcta: restaurar las columnas faltantes de `customsearch_l598_transaction_det_ret` o actualizar la librería del bundle.
+- [ ] Hasta entonces, probar A1/A2/A3/A11 por otra vía (URU-Retención / URU-Resguardo directos, o la rama automática en `afterSubmit` con `custrecord_l598_conf_proc_ret` configurado).
