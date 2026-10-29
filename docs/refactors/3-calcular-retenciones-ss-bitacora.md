@@ -121,7 +121,7 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 | ID | Arnés offline | En la cuenta |
 |---|:-:|---|
 | CRT-A1 | ✅ | ✅ **verificado 2026-10-28** (ver abajo) |
-| CRT-A2 | ✅ | 🟡 **parcial 2026-10-28**: borrado ejecutado sin errores en el log; el borrado de los detalles no se confirmó directamente (ver abajo) |
+| CRT-A2 | ✅ | ✅ **verificado en la cuenta 2026-10-28** (segunda prueba: los 4 detalles de la URU-Retención 15940 desaparecieron; la primera quedó parcial) |
 | CRT-A3 | ✅ (forma del filtro) | ❌ depende de crear retenciones (búsqueda desalineada) |
 | CRT-A6 | ✅ | ❌ ruta de error difícil de provocar |
 | CRT-A8 | ✅ | ❌ requiere generar monto escrito ≥ 1M en URU-Retención/Resguardo |
@@ -162,3 +162,11 @@ Detalles de la sección con 4 filas (todos con transacción Bill #ac2, fecha 13/
 | IRNR | 3 | 7,0% | 1.234.567,00 | 1.234.567,00 |
 
 Los IDs internos de estos 4 registros no se anotaron; se identifican por esa combinación. Aprendizaje: la sublista **sí existe** en la ficha (fuera de la vista inicial), y la retención "Retencion ac3" borrada antes pudo tenerla o no: nunca se miró, por eso aquella prueba quedó como parcial.
+
+#### CRT-A2 — segunda prueba: resultado DESPUES del borrado — 2026-10-28 (verificado)
+
+La URU-Retención "Retencion ac2" (id 15940) fue borrada por una persona (Edit > Actions > Delete).
+
+- **Log del `_REF` (script 707), 28/10/2026 23:41:** `beforeSubmit` (`paramEjecutarValidacion: true`) y `afterSubmit` (fecha de vencimiento 13/09/2026, la de la retención). **Ninguna entrada de error** con `Ocurrio un error al borrar URU-Retencion Detalle…`.
+- **Factura origen #ac2 (id 15934), vista tras el borrado:** las tres secciones `URU-Retención Detalle` muestran **(0)**. Antes del borrado la segunda tenía las 4 filas anotadas arriba (IRPF, IVA, IRAE, IRNR). Tampoco quedaron huérfanos visibles en esa factura.
+- **Resultado: A2 verificado de punta a punta.** `record.delete({type, id})` borra los URU-Retención Detalle al eliminar la URU-Retención.
