@@ -218,6 +218,15 @@ Consecuencia: si el `_REF` se deploya sin parámetro, `getParameter` devuelve `n
 | Conexion Directa FE (SS) | `custscript_l598_con_dir_fe_agrupacion` | `custscript_l598_cdf_ref_agrupacion` | copiar del original |
 | Conexion Directa FE (SS) | `custscript_l598_con_di_fe_ss_raz_glob_co` | `custscript_l598_cdf_ref_raz_glob_co` | copiar del original |
 | Conexion Directa FE (SS) | `custscript_l598_con_di_fe_ss_form_pag_mu` | `custscript_l598_cdf_ref_form_pag_mu` | copiar del original |
+| Generación TXT Localizaciones (Sched) | `custscript_l598_gen_txt_loc_subsidiaria` | `custscript_l598_gtl_subsidiaria_ref` | copiar del original (abreviado `gen_txt_loc` → `gtl`: con el nombre completo `subsidiaria` + `_ref` pasaba de 40) |
+| Generación TXT Localizaciones (Sched) | `custscript_l598_gen_txt_loc_periodo` | `custscript_l598_gtl_periodo_ref` | copiar del original (abreviado `gen_txt_loc` → `gtl`: con el nombre completo `subsidiaria` + `_ref` pasaba de 40) |
+| Generación TXT Localizaciones (Sched) | `custscript_l598_gen_txt_loc_archivo` | `custscript_l598_gtl_archivo_ref` | copiar del original (abreviado `gen_txt_loc` → `gtl`: con el nombre completo `subsidiaria` + `_ref` pasaba de 40) |
+| Generación TXT Localizaciones (Sched) | `custscript_l598_gen_txt_loc_usuario` | `custscript_l598_gtl_usuario_ref` | copiar del original (abreviado `gen_txt_loc` → `gtl`: con el nombre completo `subsidiaria` + `_ref` pasaba de 40) |
+| Generación TXT Localizaciones (Sched) | `custscript_l598_gen_txt_loc_estado_ok` | `custscript_l598_gtl_estado_ok_ref` | copiar del original (abreviado `gen_txt_loc` → `gtl`: con el nombre completo `subsidiaria` + `_ref` pasaba de 40) |
+| Generación TXT Localizaciones (Sched) | `custscript_l598_gen_txt_loc_estado_error` | `custscript_l598_gtl_estado_error_ref` | copiar del original (abreviado `gen_txt_loc` → `gtl`: con el nombre completo `subsidiaria` + `_ref` pasaba de 40) |
+| Generación TXT Localizaciones (Sched) | `custscript_l598_gen_txt_loc_taface` | `custscript_l598_gtl_taface_ref` | copiar del original (abreviado `gen_txt_loc` → `gtl`: con el nombre completo `subsidiaria` + `_ref` pasaba de 40) |
+| Generación TXT Localizaciones (Sched) | `custscript_l598_gen_txt_loc_units` | `custscript_l598_gtl_units_ref` | copiar del original (abreviado `gen_txt_loc` → `gtl`: con el nombre completo `subsidiaria` + `_ref` pasaba de 40) |
+| Generación TXT Localizaciones (Sched) | `custscript_l598_gen_txt_loc_rubro` | `custscript_l598_gtl_rubro_ref` | copiar del original (abreviado `gen_txt_loc` → `gtl`: con el nombre completo `subsidiaria` + `_ref` pasaba de 40) |
 
 Límite: el ID completo no puede pasar de 40 caracteres (`custscript_` son 11).
 

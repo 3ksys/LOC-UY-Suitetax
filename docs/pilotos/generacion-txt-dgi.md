@@ -133,8 +133,24 @@ Se verificó por inspección que el contenido del TXT es idéntico:
 - [x] Revisión manual de byte-identidad
 - [x] Documentación / justificación / recomendaciones
 - [x] Acceso a la cuenta dev — **OK (2026-07-07)**
-- [ ] Deploy aislado del `_REF` (Status=Testing) — *desbloqueado, listo para ejecutar*
+- [x] Deploy aislado del `_REF` — **2026-10-29** (ver §7). Falta ejecutarlo
 - [ ] Caracterización byte-a-byte (`cmp`) — *desbloqueado (no requiere baseline)*
 - [ ] Medición GU/tiempo propia — *desbloqueada*
 - [ ] Baseline de Tekiio (tiempos/métricas de sus pruebas) — **PENDIENTE** (para casos representativos y comparación de referencia)
 - [ ] Validación funcional conjunta Mobeats/Tekiio
+
+---
+
+## 7. Deploy del `_REF` en la cuenta — 2026-10-29
+
+| Objeto | Valor |
+|---|---|
+| Archivo | `SuiteScripts > Refactor LOC URU - Mobeats > L598 - Generación TXT Localizaciones (Sched)_REF.js` (id 15591, 32.325 bytes) |
+| Script record | id **709**, `customscript_l598_gen_txt_loc_sched_ref`, `REF - L598 - Gen TXT Local (Sched)`, API 2.1 |
+| Deployment | id **358**, `customdeploy_l598_gen_txt_loc_sched_ref`, **Not Scheduled**, Log Debug, Execute As Administrator |
+| Original (referencia) | script id 8 (`customscript_l598_gen_txt_loc_sched`, API **2.0**), deployment `customdeploy_l598_gen_txt_loc_sched`: Not Scheduled, Debug, Administrator |
+
+- **Desvío de deploy:** los 9 parámetros llevan prefijo `custscript_l598_gtl_` y sufijo `_ref` (IDs únicos en la cuenta; el nombre completo + `_ref` superaba los 40 caracteres). Mismos tipos y listas que el original (verificado en la pestaña Parameters).
+- **Valores fijos copiados del deployment original:** Estado OK = `OK`, Estado ERROR = `ERROR`, TAFACE = `TAFACE`, Unidades Indexadas Límite = 60.000,00, Rubro = `416|Créd. Prov. Software Hab.- Art.4 Dec. 206/019`. Usuario, Subsidiaria, Período y Archivo los pasa el Suitelet en cada ejecución; en el `_REF` hay que cargarlos a mano en el deployment antes de cada corrida.
+- **Sin audiencia:** un scheduled script no tiene Audience. "Not Scheduled" implica que solo corre si alguien lo ejecuta a mano.
+- **Pendiente:** ejecutar original y `_REF` con los mismos parámetros y comparar los TXT byte a byte. Ojo: ambos escriben en la misma carpeta de configuración y pueden pisarse el archivo si el nombre coincide; descargar el primero antes de correr el segundo.
