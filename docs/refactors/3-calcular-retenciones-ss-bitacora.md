@@ -121,7 +121,7 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 | ID | Arnés offline | En la cuenta |
 |---|:-:|---|
 | CRT-A1 | ✅ | ✅ **verificado 2026-10-28** (ver abajo) |
-| CRT-A2 | ✅ | ❌ requiere borrar una URU-Retención |
+| CRT-A2 | ✅ | 🟡 **parcial 2026-10-28**: borrado ejecutado sin errores en el log; el borrado de los detalles no se confirmó directamente (ver abajo) |
 | CRT-A3 | ✅ (forma del filtro) | ❌ depende de crear retenciones (búsqueda desalineada) |
 | CRT-A6 | ✅ | ❌ ruta de error difícil de provocar |
 | CRT-A8 | ✅ | ❌ requiere generar monto escrito ≥ 1M en URU-Retención/Resguardo |
@@ -138,3 +138,10 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 - **Efecto visible para usuarios:** con A1 aplicado, editar y guardar un Resguardo ya usado en una retención pasa a mostrar este error (Tekiio pidió avisarlo en las Release Notes).
 - **Cómo se llegó:** lista de Resguardos filtrada por Status "SIN INFORMAR A DGI" (134 de 268). No alcanza con la búsqueda "Pendiente de Envío" (el #9 figuraba ahí pero estaba "Informado a DGI").
 - **Detalle técnico:** la primera vez la pantalla se congeló al guardar; el log del `_REF` solo mostró `beforeLoad` (el guardado no llegaba al servidor). La segunda vez, con las alertas del navegador capturadas, el guardado llegó al servidor y devolvió el ERR002.
+
+#### CRT-A2 — borrado manual de la URU-Retención 15944 — 2026-10-28 (parcial)
+
+- **Quién:** el borrado lo ejecutó una persona (el asistente no borra datos): URU-Retención "Retencion ac3" (id 15944, vinculada a la factura #ac3 id 15941, sin Resguardo), `Edit > Actions > Delete`, con el rol de Mobeats. Se preparó la pantalla y el asistente verificó después.
+- **Log del `_REF` (script 707), 28/10/2026 23:27:** `beforeSubmit` con `paramEjecutarValidacion: true` y `afterSubmit` (debug de cuenta y fechas). **Ninguna entrada de error** (Error/System) posterior. Antes del arreglo cada línea de detalle habría registrado `Ocurrio un error al borrar URU-Retencion Detalle… objRecord.delete is not a function`.
+- **Lo que NO se pudo confirmar:** que los 4 URU-Retención Detalle ya no existan. No se anotaron sus IDs antes del borrado y la vista de la factura (subpestañas "URU-Retención Detalle", carga diferida) y la búsqueda `URU-RETENCION DETALLE W URU-RESGUARDO` (solo muestra detalles con Resguardo) no permiten verlos. Además la ausencia de error también ocurriría si el bucle no iteró (0 líneas en el registro en el momento del borrado). **Resultado: A2 sin error, no probado de punta a punta.**
+- **Para cerrarlo:** repetir sobre otra URU-Retención de prueba sin Resguardo anotando antes los IDs de sus detalles (pestaña Localizaciones URU) y consultándolos después en la lista del tipo de registro *URU-Retención Detalle*.
