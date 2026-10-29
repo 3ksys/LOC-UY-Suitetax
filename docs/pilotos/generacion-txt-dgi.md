@@ -61,6 +61,8 @@ Cada cambio indica **qué se modifica, por qué y qué mejora aporta**, con su *
 
 ## 3. Garantía de comportamiento (revisión manual de byte-identidad)
 
+> ⚠️ **Corrección (2026-10-29):** la caracterización en la cuenta (§8) encontró que la inspección omitió una regresión: el `_REF` pasaba objetos `search.Filter` a `utilities.searchSavedPro`, que reasigna `operator` (solo lectura en `search.Filter`). Corregida en `152ce56`; con el fix el TXT es byte-idéntico (§8).
+
 Se verificó por inspección que el contenido del TXT es idéntico:
 
 - **Orden de líneas:** `Map` preserva orden de primera aparición → igual que el `concat(ctaAjena, normales)` original.
@@ -69,7 +71,7 @@ Se verificó por inspección que el contenido del TXT es idéntico:
 - **Reglas de negocio intactas:** condición cuenta-ajena/beneficios, filtro rubro 514 vs publicidad, redondeo `!= 0`, mismos índices de columnas (`columns[1..16]`), mismos IDs de saved searches, parámetros y campos.
 
 ✔ **Sintaxis validada** con `node --check`.
-⏳ **Pendiente:** validación empírica byte-a-byte en la cuenta (§5).
+✔ **Validación empírica byte-a-byte en la cuenta:** hecha el 2026-10-29, idénticos tras el fix (§8).
 
 ---
 
@@ -133,8 +135,8 @@ Se verificó por inspección que el contenido del TXT es idéntico:
 - [x] Revisión manual de byte-identidad
 - [x] Documentación / justificación / recomendaciones
 - [x] Acceso a la cuenta dev — **OK (2026-07-07)**
-- [x] Deploy aislado del `_REF` — **2026-10-29** (ver §7). Falta ejecutarlo
-- [ ] Caracterización byte-a-byte (`cmp`) — *desbloqueado (no requiere baseline)*
+- [x] Deploy aislado del `_REF` — **2026-10-29** (ver §7)
+- [x] Caracterización byte-a-byte — **2026-10-29**, idénticos tras corregir una regresión (ver §8)
 - [ ] Medición GU/tiempo propia — *desbloqueada*
 - [ ] Baseline de Tekiio (tiempos/métricas de sus pruebas) — **PENDIENTE** (para casos representativos y comparación de referencia)
 - [ ] Validación funcional conjunta Mobeats/Tekiio
@@ -145,7 +147,7 @@ Se verificó por inspección que el contenido del TXT es idéntico:
 
 | Objeto | Valor |
 |---|---|
-| Archivo | `SuiteScripts > Refactor LOC URU - Mobeats > L598 - Generación TXT Localizaciones (Sched)_REF.js` (id 15591, 32.325 bytes) |
+| Archivo | `SuiteScripts > Refactor LOC URU - Mobeats > L598 - Generación TXT Localizaciones (Sched)_REF.js` (id 15591; 32.325 bytes en el deploy inicial, 32.775 tras el fix de §8) |
 | Script record | id **709**, `customscript_l598_gen_txt_loc_sched_ref`, `REF - L598 - Gen TXT Local (Sched)`, API 2.1 |
 | Deployment | id **358**, `customdeploy_l598_gen_txt_loc_sched_ref`, **Not Scheduled**, Log Debug, Execute As Administrator |
 | Original (referencia) | script id 8 (`customscript_l598_gen_txt_loc_sched`, API **2.0**), deployment `customdeploy_l598_gen_txt_loc_sched`: Not Scheduled, Debug, Administrator |
@@ -153,4 +155,25 @@ Se verificó por inspección que el contenido del TXT es idéntico:
 - **Desvío de deploy:** los 9 parámetros llevan prefijo `custscript_l598_gtl_` y sufijo `_ref` (IDs únicos en la cuenta; el nombre completo + `_ref` superaba los 40 caracteres). Mismos tipos y listas que el original (verificado en la pestaña Parameters).
 - **Valores fijos copiados del deployment original:** Estado OK = `OK`, Estado ERROR = `ERROR`, TAFACE = `TAFACE`, Unidades Indexadas Límite = 60.000,00, Rubro = `416|Créd. Prov. Software Hab.- Art.4 Dec. 206/019`. Usuario, Subsidiaria, Período y Archivo los pasa el Suitelet en cada ejecución; en el `_REF` hay que cargarlos a mano en el deployment antes de cada corrida.
 - **Sin audiencia:** un scheduled script no tiene Audience. "Not Scheduled" implica que solo corre si alguien lo ejecuta a mano.
-- **Pendiente:** ejecutar original y `_REF` con los mismos parámetros y comparar los TXT byte a byte. Ojo: ambos escriben en la misma carpeta de configuración y pueden pisarse el archivo si el nombre coincide; descargar el primero antes de correr el segundo.
+- El nombre de salida lleva fecha y hora, así que original y `_REF` no se pisan (comprobado en §8).
+
+---
+
+## 8. Caracterización en la cuenta — 2026-10-29
+
+Mismos parámetros en ambos: subsidiaria Parent Company : Uruguay, período Sep 2026, archivo BETA 2181. El original corrió por el Suitelet y el `_REF` por el deployment 358 (Scheduled, evento único, luego devuelto a Not Scheduled).
+
+| Corrida | Resultado |
+|---|---|
+| Original, 00:09 | Archivo 15593 `BETA_2181_20261029_000856.txt`, 128 bytes, log 3101 |
+| `_REF` v1, 00:31 (archivo de 32.325 bytes) | **Falló**: `RORV007 function searchSavedPro: Read only property: operator`; resultado "No se encontraron transacciones a informar en el TXT." (log 3102, sin archivo) |
+| `_REF` v2, 09:31 (32.775 bytes, commit `152ce56`) | Archivo 15693, 128 bytes, `error:false`, log 3201, duración 20 s |
+
+- **Regresión encontrada:** `filtrosSubsidiariaPeriodo` devolvía `search.createFilter(...)` y `generarTXT` los pasaba a `utilities.searchSavedPro`, que reasigna `arrayParams[i].operator`. El original le pasa objetos planos. El fix devuelve objetos planos y los convierte con `filtrosComoSearchFilter` solo para el `search.load` del rubro publicidad.
+- **Comparación:** el contenido de 15593 y 15693 es idéntico (128 caracteres, 2 líneas, `\r\n` al final de cada una):
+
+  `212661610019;02181;202609;218131050015;202609;505;000098699605`
+  `212661610019;02181;202609;214483980016;202609;506;-00000100000`
+- **Límite de la prueba:** el período tiene solo 2 líneas, así que no ejercita la ruta de >1000 resultados (GTX-A1), el filtro de rubro 514 ni la rama de publicidad con datos. La identidad está probada para este caso, no para todos.
+- **No medido:** GU y tiempo comparables (el original corrió por Suitelet + task, el `_REF` por schedule). La tabla de §5 sigue sin completar en esas filas.
+- **Estado del deployment 358:** Not Scheduled.
