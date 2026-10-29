@@ -145,3 +145,20 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 - **Log del `_REF` (script 707), 28/10/2026 23:27:** `beforeSubmit` con `paramEjecutarValidacion: true` y `afterSubmit` (debug de cuenta y fechas). **Ninguna entrada de error** (Error/System) posterior. Antes del arreglo cada línea de detalle habría registrado `Ocurrio un error al borrar URU-Retencion Detalle… objRecord.delete is not a function`.
 - **Lo que NO se pudo confirmar:** que los 4 URU-Retención Detalle ya no existan. No se anotaron sus IDs antes del borrado y la vista de la factura (subpestañas "URU-Retención Detalle", carga diferida) y la búsqueda `URU-RETENCION DETALLE W URU-RESGUARDO` (solo muestra detalles con Resguardo) no permiten verlos. Además la ausencia de error también ocurriría si el bucle no iteró (0 líneas en el registro en el momento del borrado). **Resultado: A2 sin error, no probado de punta a punta.**
 - **Para cerrarlo:** repetir sobre otra URU-Retención de prueba sin Resguardo anotando antes los IDs de sus detalles (pestaña Localizaciones URU) y consultándolos después en la lista del tipo de registro *URU-Retención Detalle*.
+
+#### CRT-A2 — segunda prueba: estado ANTES del borrado — 2026-10-28
+
+Retención candidata: **URU-Retención "Retencion ac2"** (id 15940, 13/09/2026, factura origen #ac2 id 15934, estado Generado, sin Resguardo). Importes: IRPF 129.629,54 / IRNR 86.419,69 / IRAE 98.765,36 / IVA 84.197,47.
+
+Pestañas de detalle (se ven solo desplazándose hacia abajo en la ficha; hay tres secciones con el mismo nombre): `URU-Retención Detalle (0)` · **`URU-Retención Detalle (4)`** · `URU-Retención Detalle (0)`; además `URU-Factura Electrónica Detalle Log (0)` y `URU-Información Referencia (0)`.
+
+Detalles de la sección con 4 filas (todos con transacción Bill #ac2, fecha 13/09/2026, URY, tipo de cambio 1, estado URU-Retención ID "A"):
+
+| Tipo | Código | Alícuota | Base de cálculo | Base de cálculo final |
+|---|---|---|---|---|
+| IRPF | 1146171 | 10,5% | 1.234.567,00 | 1.234.567,00 |
+| IVA | 2 | 31,0% | 271.604,74 | 271.604,74 |
+| IRAE | 1 | 8,0% | 1.234.567,00 | 1.234.567,00 |
+| IRNR | 3 | 7,0% | 1.234.567,00 | 1.234.567,00 |
+
+Los IDs internos de estos 4 registros no se anotaron; se identifican por esa combinación. Aprendizaje: la sublista **sí existe** en la ficha (fuera de la vista inicial), y la retención "Retencion ac3" borrada antes pudo tenerla o no: nunca se miró, por eso aquella prueba quedó como parcial.
