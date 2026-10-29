@@ -108,3 +108,8 @@ Quedan **104 `var`**, cada uno con motivo: 33 nombres redeclarados en la misma f
 - [ ] Verificar el botón "Generar CAE 2.0" (`CLIENT_SCRIPT_CL`) cuando exista un par proveedor + configuración activo y el `_REF` lea bien las columnas.
 - [ ] Mapeo de Remito duplicado en el proveedor SICFE (ids 22 y 23) y en TAFACE (ids 10 y 11): avisar a Tekiio.
 - [ ] Registros de log FE 3197-3201 / 3206-3210 creados por las pruebas: aceptados, limpiar solo si Tekiio lo pide.
+
+## CDF-B2 y CDF-B5 evaluados, no aplicados — 2026-10-29
+
+- **B2 (`record.load` → `lookupFields` en `beforeLoad`):** sigue bloqueado por la duda de tipos de campo. Se intentó verificarlos en la cuenta (Customization > Lists, Records > Transaction Body Fields) y el rol de pruebas **URU-Contador Suitetax (Mobeats)** no tiene el permiso *Custom Body Fields* (`Permission Violation`). No se cambió de rol: el acuerdo es trabajar solo con el rol de Mobeats. **Para destrabarlo:** que Tekiio confirme los tipos de `custbody_l598_cae`, `_trans_interna`, `_documento_xml_fe`, `_sucursal`, `_tipo_comprobante`, `_serie_comprobante` y de `shipstatus`, o que habilite el permiso de lectura de esos campos al rol de Mobeats.
+- **B5 (doble `load` + doble `save` en el modo automático):** no se aplica. Cambia el mecanismo de persistencia de un flujo fiscal y hoy **no hay forma de regresionarlo**: el botón/flujo del CDF no corre en la cuenta (deriva de la búsqueda guardada 164 con 4 columnas SICFE de más y proveedor/config FE inactivos; ver más arriba). Aplicarlo sin poder ejecutar el flujo sería tocar código fiscal a ciegas. Se retoma cuando el CDF pueda ejecutarse.
