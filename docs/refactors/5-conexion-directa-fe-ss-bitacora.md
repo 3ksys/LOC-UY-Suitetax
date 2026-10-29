@@ -113,3 +113,20 @@ Quedan **104 `var`**, cada uno con motivo: 33 nombres redeclarados en la misma f
 
 - **B2 (`record.load` → `lookupFields` en `beforeLoad`):** sigue bloqueado por la duda de tipos de campo. Se intentó verificarlos en la cuenta (Customization > Lists, Records > Transaction Body Fields) y el rol de pruebas **URU-Contador Suitetax (Mobeats)** no tiene el permiso *Custom Body Fields* (`Permission Violation`). No se cambió de rol: el acuerdo es trabajar solo con el rol de Mobeats. **Para destrabarlo:** que Tekiio confirme los tipos de `custbody_l598_cae`, `_trans_interna`, `_documento_xml_fe`, `_sucursal`, `_tipo_comprobante`, `_serie_comprobante` y de `shipstatus`, o que habilite el permiso de lectura de esos campos al rol de Mobeats.
 - **B5 (doble `load` + doble `save` en el modo automático):** no se aplica. Cambia el mecanismo de persistencia de un flujo fiscal y hoy **no hay forma de regresionarlo**: el botón/flujo del CDF no corre en la cuenta (deriva de la búsqueda guardada 164 con 4 columnas SICFE de más y proveedor/config FE inactivos; ver más arriba). Aplicarlo sin poder ejecutar el flujo sería tocar código fiscal a ciegas. Se retoma cuando el CDF pueda ejecutarse.
+
+### CDF-B2: tipos de campo inferidos desde el formulario — 2026-10-29
+
+Sin permiso de *Custom Body Fields* ni de *Records Catalog* en el rol de Mobeats, se leyó (solo lectura, sin guardar) el formulario de edición de la factura de venta id 15983 y se miró el tipo de input de cada campo. Es **inferencia por pantalla, no la definición del campo**.
+
+| Campo | Input en el formulario | Inferencia | `lookupFields` devolvería |
+|---|---|---|---|
+| `custbody_l598_cae` | text | Texto libre | string |
+| `custbody_l598_trans_interna` | checkbox | Checkbox | boolean |
+| `custbody_l598_documento_xml_fe` | text `_display` + hidden | Lista/registro (documento) | `[{value, text}]` o `[]` |
+| `custbody_l598_sucursal` | `inpt_` (desplegable) | Lista/registro | `[{value, text}]` o `[]` |
+| `custbody_l598_tipo_comprobante` | `inpt_` (desplegable) | Lista/registro | `[{value, text}]` o `[]` |
+| `custbody_l598_serie_comprobante` | `inpt_` (desplegable) | Lista/registro | `[{value, text}]` o `[]` |
+| `shipstatus` | no aparece en la factura ni en el Item Fulfillment 14913 leído | **Sin inferir** | desconocido |
+
+- Es coherente con el código: `sucursal`, `tipo_comprobante` y `serie_comprobante` se leen con `getText` (campos de lista) y `cae`, `trans_interna` y `documento_xml_fe` con `getValue`.
+- **B2 sigue sin aplicarse:** falta `shipstatus`, la inferencia no distingue texto corto de largo ni campos ocultos o vacíos, y `beforeLoad` es código fiscal donde `isEmpty([])` es `false`. Para aplicarlo hace falta la confirmación de Tekiio o el permiso de lectura de los campos.
