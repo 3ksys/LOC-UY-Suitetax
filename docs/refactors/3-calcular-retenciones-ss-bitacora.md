@@ -120,7 +120,7 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 
 | ID | Arnés offline | En la cuenta |
 |---|:-:|---|
-| CRT-A1 | ✅ | ❌ falta un Resguardo con detalle no informado a DGI |
+| CRT-A1 | ✅ | ✅ **verificado 2026-10-28** (ver abajo) |
 | CRT-A2 | ✅ | ❌ requiere borrar una URU-Retención |
 | CRT-A3 | ✅ (forma del filtro) | ❌ depende de crear retenciones (búsqueda desalineada) |
 | CRT-A6 | ✅ | ❌ ruta de error difícil de provocar |
@@ -130,3 +130,11 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 | CDF-C2 | ✅ (estático) | n/a |
 | CDF-A8 (extra) | ❌ no cubierto | ❌ bloqueado por deriva SICFE |
 | TRS-A6 (extra) | ✅ | ❌ campo `custbody_l598_monto_escrito` no aplicado a Vendor Credit |
+
+#### CRT-A1 verificado en la cuenta — 2026-10-28
+
+- **Caso:** URU-Resguardo #271 (id 15925), estado "Sin informar a DGI" (no firmado), proveedor "a proveedor 12", USD, con detalle de retención. Se abrió en edición **sin cambiar ningún campo** y se guardó una vez, con el rol de Mobeats (deployment `customdeploy_l598_crt_ref_resguardo`, Testing, parámetro "Ejecutar validaciones Resguardo/Retención" marcado).
+- **Resultado:** el guardado se **rechazó** con `ERR002` — "No se puede editar la transaccion de URU-Resguardo porque ya fue considerada en una transaccion de URU-Retención - ID Transaccion: 15925 - TIPO Transaccion: URU-Resguardo" — lanzado desde `validarEdicionUruResguardo` (`_REF` línea 2282) vía `beforeSubmit` (línea 2174). Antes de A1 la comparación `runtime.executionContext == "userinterface"` nunca era verdadera y la validación no corría.
+- **Efecto visible para usuarios:** con A1 aplicado, editar y guardar un Resguardo ya usado en una retención pasa a mostrar este error (Tekiio pidió avisarlo en las Release Notes).
+- **Cómo se llegó:** lista de Resguardos filtrada por Status "SIN INFORMAR A DGI" (134 de 268). No alcanza con la búsqueda "Pendiente de Envío" (el #9 figuraba ahí pero estaba "Informado a DGI").
+- **Detalle técnico:** la primera vez la pantalla se congeló al guardar; el log del `_REF` solo mostró `beforeLoad` (el guardado no llegaba al servidor). La segunda vez, con las alertas del navegador capturadas, el guardado llegó al servidor y devolvió el ERR002.
