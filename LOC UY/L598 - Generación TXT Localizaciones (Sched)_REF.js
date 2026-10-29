@@ -22,8 +22,9 @@
  *
  * DESVIO DE DEPLOY (no de refactor): los IDs de parametro de script son unicos
  * en toda la cuenta y el original ya define custscript_l598_gen_txt_loc_*. En el
- * script record REF los 9 parametros llevan el sufijo "_ref" (mismo tipo y
- * lista/registro que el original). La logica no cambia.
+ * script record REF los 9 parametros llevan el sufijo "_ref" y el prefijo
+ * abreviado "custscript_l598_gtl_" (con el nombre completo + _ref superaban los
+ * 40 caracteres); mismo tipo y lista/registro que el original. La logica no cambia.
  * ============================================================================
  */
 define(['N/runtime', 'N/format', 'L598/utilities', 'N/record', 'N/file', 'N/url', 'N/email', 'N/search', 'N/currency'],
@@ -48,16 +49,16 @@ define(['N/runtime', 'N/format', 'L598/utilities', 'N/record', 'N/file', 'N/url'
             try {
                 const currScript = runtime.getCurrentScript();
                 return {
-                    subsidiaria: currScript.getParameter('custscript_l598_gen_txt_loc_subsidiaria_ref'),
-                    periodo: currScript.getParameter('custscript_l598_gen_txt_loc_periodo_ref'),
-                    archivo: currScript.getParameter('custscript_l598_gen_txt_loc_archivo_ref'),
-                    usuario: currScript.getParameter('custscript_l598_gen_txt_loc_usuario_ref'),
-                    estadoOk: currScript.getParameter('custscript_l598_gen_txt_loc_estado_ok_ref'),
-                    estadoError: currScript.getParameter('custscript_l598_gen_txt_loc_estado_error_ref'),
+                    subsidiaria: currScript.getParameter('custscript_l598_gtl_subsidiaria_ref'),
+                    periodo: currScript.getParameter('custscript_l598_gtl_periodo_ref'),
+                    archivo: currScript.getParameter('custscript_l598_gtl_archivo_ref'),
+                    usuario: currScript.getParameter('custscript_l598_gtl_usuario_ref'),
+                    estadoOk: currScript.getParameter('custscript_l598_gtl_estado_ok_ref'),
+                    estadoError: currScript.getParameter('custscript_l598_gtl_estado_error_ref'),
                     // Modificación Publicidad
-                    isTaface: currScript.getParameter('custscript_l598_gen_txt_loc_taface_ref'),
-                    units: currScript.getParameter('custscript_l598_gen_txt_loc_units_ref'),
-                    rubroPub: currScript.getParameter('custscript_l598_gen_txt_loc_rubro_ref')
+                    isTaface: currScript.getParameter('custscript_l598_gtl_taface_ref'),
+                    units: currScript.getParameter('custscript_l598_gtl_units_ref'),
+                    rubroPub: currScript.getParameter('custscript_l598_gtl_rubro_ref')
                 };
             } catch (excepcion) {
                 log.error('getParams', 'Excepcion Obteniendo Parametros - Excepcion : ' + excepcion.message);
