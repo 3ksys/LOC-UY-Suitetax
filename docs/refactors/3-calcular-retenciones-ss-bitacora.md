@@ -125,7 +125,7 @@ Ninguna comparación cambió de `==` a `===` (el plan no lo pedía). Lo único q
 | CRT-A3 | ✅ (forma del filtro) | ❌ depende de crear retenciones (búsqueda desalineada) |
 | CRT-A6 | ✅ | ❌ ruta de error difícil de provocar |
 | CRT-A8 | ✅ | ❌ requiere generar monto escrito ≥ 1M en URU-Retención/Resguardo |
-| CRT-A11 | ✅ (simulado) | ❌ requiere borrar un Resguardo |
+| CRT-A11 | ✅ (simulado) | 🟡 **2026-10-28**: Resguardo #271 borrado con 1 línea de Información Referencia; sin errores en el log (ver abajo) |
 | CDF-A2 | ✅ | ❌ bloqueado por deriva SICFE |
 | CDF-C2 | ✅ (estático) | n/a |
 | CDF-A8 (extra) | ❌ no cubierto | ❌ bloqueado por deriva SICFE |
@@ -170,3 +170,11 @@ La URU-Retención "Retencion ac2" (id 15940) fue borrada por una persona (Edit >
 - **Log del `_REF` (script 707), 28/10/2026 23:41:** `beforeSubmit` (`paramEjecutarValidacion: true`) y `afterSubmit` (fecha de vencimiento 13/09/2026, la de la retención). **Ninguna entrada de error** con `Ocurrio un error al borrar URU-Retencion Detalle…`.
 - **Factura origen #ac2 (id 15934), vista tras el borrado:** las tres secciones `URU-Retención Detalle` muestran **(0)**. Antes del borrado la segunda tenía las 4 filas anotadas arriba (IRPF, IVA, IRAE, IRNR). Tampoco quedaron huérfanos visibles en esa factura.
 - **Resultado: A2 verificado de punta a punta.** `record.delete({type, id})` borra los URU-Retención Detalle al eliminar la URU-Retención.
+
+#### CRT-A11 — borrado manual del URU-Resguardo #271 (id 15925) — 2026-10-28
+
+Estado ANTES: SIN INFORMAR A DGI, 09/11/2026, proveedor "a proveedor 12", USD. **URU-Información Referencia: 1 línea ("Bill #Ref15")**; las tres secciones URU-Retención Detalle vacías (sin retenciones vinculadas); la pestaña URU-Factura Electrónica Detalle Log tenía contenido (no se abrió). Borrado por una persona (Edit > Actions > Delete).
+
+- **Log del `_REF` (script 707), 28/10/2026 23:46:** `beforeSubmit` (`paramEjecutarValidacion: true`) y `afterSubmit` (`fechaVencRet` 09/11/2026, la del Resguardo). **Ninguna entrada de error**, ni `Ocurrio un error al borrar URU-Informacion Referencia…`. Con el código viejo, `removeLine(sublista, 1)` sobre una única línea (válida solo la 0) lanzaba excepción.
+- La ficha ya no existe ("That record does not exist").
+- **Limitaciones:** (a) el Resguardo no tenía retenciones vinculadas, así que no se comprobó que vuelvan a "Pendiente de Resguardo"; (b) la línea de referencia era parte del propio registro borrado, por lo que su limpieza no se puede observar después. **Resultado: A11 sin error con una línea (el caso que fallaba antes); efectos secundarios no observables.**
