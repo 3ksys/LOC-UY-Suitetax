@@ -197,7 +197,7 @@ define(['N/runtime', 'N/format', 'L598/utilities', 'N/record', 'N/file', 'N/url'
 
             const searchLoad = search.load({ id: SEARCH_2181 });
 
-            filtrosSubsidiariaPeriodo(isOneWorld, subsidiaria, periodo).forEach(f => searchLoad.filters.push(f));
+            filtrosComoSearchFilter(filtrosSubsidiariaPeriodo(isOneWorld, subsidiaria, periodo)).forEach(f => searchLoad.filters.push(f));
 
             searchLoad.columns = [
                 search.createColumn({
@@ -555,15 +555,22 @@ define(['N/runtime', 'N/format', 'L598/utilities', 'N/record', 'N/file', 'N/url'
         // ----------------------------------------------------------------------
 
         // Filtros comunes de subsidiaria + período (reutilizado por las 2 búsquedas base).
+        // Devuelve objetos PLANOS {name, operator, values}: utilities.searchSavedPro los espera así y les
+        // reasigna .operator (en un search.Filter esa propiedad es de solo lectura y falla con
+        // "Read only property: operator"). Para search.load se convierten con filtrosComoSearchFilter.
         function filtrosSubsidiariaPeriodo(isOneWorld, subsidiaria, periodo) {
             const filtros = [];
             if (isOneWorld && !utilities.isEmpty(subsidiaria)) {
-                filtros.push(search.createFilter({ name: 'subsidiary', operator: search.Operator.IS, values: subsidiaria }));
+                filtros.push({ name: 'subsidiary', operator: 'IS', values: subsidiaria });
             }
             if (!utilities.isEmpty(periodo)) {
-                filtros.push(search.createFilter({ name: 'postingperiod', operator: search.Operator.IS, values: periodo }));
+                filtros.push({ name: 'postingperiod', operator: 'IS', values: periodo });
             }
             return filtros;
+        }
+
+        function filtrosComoSearchFilter(filtros) {
+            return filtros.map(f => search.createFilter({ name: f.name, operator: search.Operator.IS, values: f.values }));
         }
 
         // Toma una fecha en otra zona horaria y la mueve según el offset indicado (default GMT0).
