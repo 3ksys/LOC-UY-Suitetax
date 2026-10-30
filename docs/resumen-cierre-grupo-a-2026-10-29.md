@@ -18,7 +18,8 @@
 
 - Con los mismos parámetros (Uruguay, Sep 2026, BETA 2181), el original y el `_REF` generaron un TXT **idéntico byte a byte** (128 bytes, 2 líneas).
 - La primera corrida del `_REF` **falló** por una regresión nuestra: pasaba objetos `search.Filter` a `searchSavedPro`, que reasigna `operator` (solo lectura). Se corrigió y la segunda corrida fue correcta. La inspección de código no la había detectado.
-- Límite: el período solo tiene 2 líneas; no cubre el caso de más de 1000 resultados (GTX-A1) ni la rama de publicidad con datos. No se midieron GU ni tiempo comparables.
+- Segunda corrida con Dic 2023 (12 líneas, rubros 504/505/506): también idéntico byte a byte (30/10/2026).
+- Límite: ningún período de la cuenta se acerca a 1000 resultados (máximo 6 filas), así que GTX-A1 y la rama de publicidad con datos no se cubren. No se midieron GU ni tiempos comparables.
 
 ## 3. Lo que necesitamos de Tekiio
 
