@@ -178,3 +178,10 @@ Estado ANTES: SIN INFORMAR A DGI, 09/11/2026, proveedor "a proveedor 12", USD. *
 - **Log del `_REF` (script 707), 28/10/2026 23:46:** `beforeSubmit` (`paramEjecutarValidacion: true`) y `afterSubmit` (`fechaVencRet` 09/11/2026, la del Resguardo). **Ninguna entrada de error**, ni `Ocurrio un error al borrar URU-Informacion Referencia…`. Con el código viejo, `removeLine(sublista, 1)` sobre una única línea (válida solo la 0) lanzaba excepción.
 - La ficha ya no existe ("That record does not exist").
 - **Limitaciones:** (a) el Resguardo no tenía retenciones vinculadas, así que no se comprobó que vuelvan a "Pendiente de Resguardo"; (b) la línea de referencia era parte del propio registro borrado, por lo que su limpieza no se puede observar después. **Resultado: A11 sin error con una línea (el caso que fallaba antes); efectos secundarios no observables.**
+
+## CRT-A10 U1 — registro de las llamadas a Suitelets — 2026-10-30
+
+- **Cambio (`7ac798b`):** `invocarSuitelet` envuelve las 4 llamadas `https.post` (Calcular Retenciones, Crear Retención Detalle, Crear Resguardo, Crear Pago Factura) y deja en el log el código HTTP, el body y el motivo de falla. Devuelve la respuesta cruda y relanza las excepciones: **el flujo no cambia**. Se corrigió D3 quitando el re-parseo de la respuesta de la llamada 1.
+- **Validación:** `tools/arnes-grupo-a.js` (sección CRT-A10 U1): 6 escenarios de respuesta y conteo de los `JSON.parse(responseSL.body)` que deciden el flujo (2 antes, 2 después). Los `https.post(` directos pasaron de 4 a 1 (el del wrapper).
+- **No probado en la cuenta:** ninguna de las 4 llamadas se puede ejecutar de punta a punta (búsqueda guardada id 20 desalineada). Ver [propuesta §9](../propuestas/CRT-A10-validacion-llamadas-suitelets.md).
+

@@ -177,3 +177,23 @@ U1, U2 y U4 pueden avanzar ya. U3 espera las decisiones del §4.
 
 Es coherente con que el UE los invoque con `returnExternalUrl: true` y sin credenciales: **la arquitectura actual lo necesita**. Pasa a ser un hallazgo de seguridad concreto: quien conozca la URL externa de un deployment puede crear URU-Retenciones, Resguardos o pagos. No se tocó nada. Cambiarlo exige rediseñar la autenticación entre el UE y los Suitelets, así que va como propuesta aparte y con decisión de Tekiio. Verificado en la cuenta de desarrollo; la de producción puede diferir.
 
+---
+
+## 9. U1 aplicada en el `_REF` — 2026-10-30 (commit `7ac798b`)
+
+Se aplicó **solo U1**, en `L598 - Calcular Retenciones (SS)V2_REF.js`. U2, U3 y U4 siguen sin tocar.
+
+**Qué hace.** Las 4 llamadas pasan por `invocarSuitelet`, que registra con `log.error` (título `CRT-A10 <Suitelet>`) el motivo cuando la respuesta no es válida: sin respuesta, código distinto de 200, body que no es JSON, o JSON con `error`. Incluye la transacción y el body truncado a 1000 caracteres.
+
+**Qué no cambia (flujo idéntico).** Es lo que permite aplicarla antes de D1 a D4:
+- Devuelve la respuesta cruda de `https.post`; el código que la usa no se tocó.
+- Relanza las excepciones de `https.post`, como hoy.
+- Los `JSON.parse(responseSL.body)` de las llamadas 3 y 4, que deciden si se genera el pago, siguen donde estaban.
+- Ninguna falla corta ni cambia lo que sigue: la política (§4) queda para U3.
+
+**D3 (§3.4).** Se quitó el `JSON.parse(response.body)` que re-parseaba la respuesta de la llamada 1, que ya se había parseado y no podía lanzar. La respuesta de Crear Retención Detalle ahora se valida y queda en el log, sin que el flujo dependa de ella.
+
+**Validación.** Solo offline, con `tools/arnes-grupo-a.js`: el wrapper devuelve la misma respuesta en los 6 escenarios, relanza la excepción y loguea el motivo en cada falla (200 con `{"error":...}`, 500, body no JSON, `https.post` que lanza). **No se probó en la cuenta**: la búsqueda guardada id 20 impide generar retenciones, así que ninguna de las 4 llamadas se puede ejecutar de punta a punta.
+
+**Pendiente.** Aprobación formal de Tekiio de esta propuesta; U2 modifica los Suitelets originales (código productivo) y U4 depende de poder generar retenciones.
+

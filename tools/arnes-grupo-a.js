@@ -152,3 +152,41 @@ console.log('\n=== CDF-A8 ===');
   const cuenta = (src) => (src.match(/log\.error\(proceso, mensaje\);/g) || []).length;
   fila('log.error(proceso, mensaje) restantes', cuenta(A), cuenta(D));
 }
+
+// ---- CRT-A10 U1 ----
+// invocarSuitelet solo agrega log: devuelve la respuesta cruda y relanza las excepciones de https.post.
+// Se ejecuta la funcion REAL con https simulado y se compara contra la revision anterior, que llamaba a https.post directo.
+console.log('\n=== CRT-A10 U1 invocarSuitelet ===');
+{
+  const REV_A10 = { antes: '4728612', despues: '7ac798b' };
+  const escenarios = [
+    ['200 con body OK', () => ({ code: 200, body: JSON.stringify({ error: false, x: 1 }) })],
+    ['200 con {"error":"msg"}', () => ({ code: 200, body: JSON.stringify({ error: 'falla de negocio' }) })],
+    ['200 con {error:true,mensaje}', () => ({ code: 200, body: JSON.stringify({ error: true, mensaje: 'sin detalles' }) })],
+    ['500 (governance/parse)', () => ({ code: 500, body: 'SSS_USAGE_LIMIT_EXCEEDED' })],
+    ['200 con body no JSON', () => ({ code: 200, body: '<html>login</html>' })],
+    ['https.post lanza', () => { throw new Error('SSS_REQUEST_TIME_EXCEEDED'); }]
+  ];
+  const correr = (rev, esc) => {
+    const logs = [];
+    const record = { Type: { VENDOR_BILL: 'vendorbill' } };
+    const https = { post: (o) => esc() };
+    const log = { debug() {}, audit() {}, error(t, m) { logs.push(t + ' :: ' + m); } };
+    // cargar() inyecta log propio; se pasa https simulado en la posicion 8
+    const r = cargar('crt', rev, ['invocarSuitelet', 'getNumberLiteral'], (l) => [l, record, { Operator: {}, createFilter: (o) => o, create: () => ({}) }, { executionContext: 'X', ContextType: {}, getCurrentScript() { return { getParameter() { return null; } }; } }, { create: (o) => new Error(o.message) }, {}, {}, https]);
+    if (!r.t.invocarSuitelet) return { existe: false };
+    let devuelve, lanza = '(no lanza)';
+    try { devuelve = r.t.invocarSuitelet({ nombre: 'Crear Resguardo', url: 'u', body: {}, idTransaccion: 77 }); } catch (e) { lanza = e.message; }
+    return { existe: true, devuelve: devuelve ? devuelve.code : devuelve, lanza, log: r.logs.length ? r.logs[0].slice(0, 110) : '(sin log)' };
+  };
+  for (const [nombre, esc] of escenarios) {
+    const d = correr(REV_A10.despues, esc);
+    fila(nombre, d.existe ? `devuelve=${d.devuelve} | ${d.lanza}` : 'no existe', d.log);
+  }
+  // El flujo de las llamadas 3 y 4 depende de JSON.parse(responseSL.body): debe seguir en las mismas dos llamadas.
+  const parseos = (rev) => (execFileSync('git', ['show', `${rev}:${FILE.crt}`], { encoding: 'utf8', maxBuffer: 1 << 26 }).match(/JSON\.parse\(responseSL\.body\)/g) || []).length;
+  fila('JSON.parse(responseSL.body) (llamadas 3 y 4)', parseos(REV_A10.antes), parseos(REV_A10.despues));
+  const posts = (rev) => (execFileSync('git', ['show', `${rev}:${FILE.crt}`], { encoding: 'utf8', maxBuffer: 1 << 26 }).match(/https\.post\(/g) || []).length;
+  fila('https.post( directos en el archivo', posts(REV_A10.antes), posts(REV_A10.despues));
+}
+
