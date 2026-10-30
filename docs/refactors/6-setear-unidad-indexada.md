@@ -76,7 +76,7 @@ El hallazgo de mayor valor no es de performance: este script es **el único escr
 |---|---|---|:--:|:--:|
 | #2 | SUI-B1 | Config FE + config UI: SuiteQL `SELECT` específico o `N/cache` (hoy 2 SS completas por guardado) — **requiere aprobación previa por reemplazo de mecanismo** | 🔴 | ⏳ Propuesto |
 | #2 | SUI-B2 | Cachear/memorizar `l598esOneworld` (vía `utilities_REF`, coordinado con el resto de consumidores) | 🟡 | ⏳ Propuesto |
-| #3 | SUI-B3 | Nota de dependencia: página `getRange` extra en `searchSavedPro` (se documenta, no se toca en este script) | 🟢 | ⏳ Propuesto |
+| #3 | SUI-B3 | Nota de dependencia: página `getRange` extra en `searchSavedPro` (se documenta, no se toca en este script) | 🟢 | 📝 Documentado — no se aplica (Tekiio 2026-10-26: cambio a utilidad compartida = alto riesgo, evaluable a futuro de forma individual) |
 | #4 | SUI-C1 | `var` → `const/let` (unificando las declaraciones dobles de `subsidiaria`/`rate`) | 🟢 | 🔧 Aplicado |
 | #4 | SUI-C2 | Quitar el 2º argumento de `parseFloat(rate, 10)` | 🟢 | 🔧 Aplicado |
 | #4 | SUI-C3 | Eliminar `'N/error'` del `define` | 🟢 | 🔧 Aplicado |
