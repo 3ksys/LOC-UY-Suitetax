@@ -190,3 +190,24 @@ console.log('\n=== CRT-A10 U1 invocarSuitelet ===');
   fila('https.post( directos en el archivo', posts(REV_A10.antes), posts(REV_A10.despues));
 }
 
+// ---- TRS-A5 ----
+// getNumberLiteral con entrada no numerica: antes llamaba alert() (ReferenceError en el servidor, caia al catch);
+// despues loguea el motivo. El valor devuelto y las salidas para numeros validos deben ser identicos.
+console.log('\n=== TRS-A5 getNumberLiteral (entrada no numerica) ===');
+{
+  const REV_A5 = { antes: '2330410', despues: 'c46af58' };
+  const inj = (log) => [log,
+    { Operator: { IS: 'is', ANYOF: 'anyof' }, createFilter: (o) => o, create: () => ({ run: () => ({ getRange: () => [{ getValue: () => true }] }) }) },
+    { getCurrentScript() { return { getParameter() { return null; } }; } }, {}, { isEmpty }];
+  const A = cargar('trs', REV_A5.antes, ['getNumberLiteral'], inj);
+  const D = cargar('trs', REV_A5.despues, ['getNumberLiteral'], inj);
+  for (const [x, nombre] of [['abc', "'abc'"], [NaN, 'NaN'], [undefined, 'undefined']]) {
+    A.logs.length = 0; D.logs.length = 0;
+    const ra = A.t.getNumberLiteral(x), rd = D.t.getNumberLiteral(x);
+    fila(`retorno con ${nombre}`, JSON.stringify(ra), JSON.stringify(rd));
+    fila(`  log con ${nombre}`, (A.logs[0] || '(sin log)').slice(-48), (D.logs[0] || '(sin log)').slice(0, 48));
+  }
+  const iguales = [1000500, 15061.72, 10.5, 2500000, 21000, 0, 1234567890].every((n) => A.t.getNumberLiteral(n) === D.t.getNumberLiteral(n));
+  fila('salida identica en 7 numeros validos', 'n/a', iguales ? 'SI' : 'NO (revisar)');
+}
+

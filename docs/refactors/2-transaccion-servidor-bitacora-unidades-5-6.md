@@ -96,3 +96,11 @@ Por debajo de 1.000 filas el output debe ser **idéntico**, y ese es el caso que
 
 ✔ **Sintaxis:** `node --check` OK.
 
+
+## TRS-A5 aplicado — 2026-10-30
+
+- **Cambio (`c46af58`):** en `getNumberLiteral` del `_REF`, el `alert("La Cantidad debe ser un valor Numérico.")` (API de navegador, inexistente en el servidor) pasó a `log.error(proceso, ...)`. La función sigue devolviendo `"NO DISPONIBLE"`, igual que antes (el `ReferenceError` caía al catch y salía ese valor) y igual que en CRT-A6.
+- **Aprobación:** Tekiio Producto (respuesta en el Tablero de la planilla de seguimiento: «SE PUEDE PROCEDER A APLICAR EL CAMBIO»). Fecha no registrada.
+- **Verificación:** `tools/arnes-grupo-a.js`, sección TRS-A5. Con `'abc'`, `NaN` y `undefined` el retorno es idéntico y el log pasa de `alert is not defined` a `La Cantidad debe ser un valor Numérico.`; 7 números válidos dan la misma salida. **Sin probar en la cuenta.**
+- **Subido a la cuenta:** archivo 15552 (`L598 -Transacción (Servidor)_REF.js`), de 84.665 a 84.882 bytes, igual al local.
+- **TRS-A4 no se aplicó:** Producto pidió confirmar el contexto funcional antes de corregir; ver [registro](../registro-aprobaciones.md).
