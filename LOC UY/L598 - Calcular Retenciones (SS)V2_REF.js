@@ -1045,6 +1045,52 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
   /*
      * Función l598afterSubmit
      */
+  /**
+   * CRT-A10 / U1 - Envuelve https.post hacia los Suitelets de retenciones para dejar
+   * en el log el motivo cuando la respuesta no es una respuesta valida. NO cambia el flujo:
+   * devuelve la respuesta cruda, relanza las excepciones de https.post y no decide nada
+   * (la politica de que hacer ante una falla queda para U3, a definir por Tekiio en D1-D4).
+   * Los Suitelets atrapan sus errores y responden 200, por eso se mira tambien el body.
+   * @param {Object} datos nombre, url, body, idTransaccion (solo para el log)
+   * @returns {Object} la respuesta de https.post, sin modificar
+   */
+  function invocarSuitelet(datos) {
+    const titulo = ("CRT-A10 " + datos.nombre).substring(0, 99);
+    const contexto = "idTransaccion=" + datos.idTransaccion;
+    let response;
+    try {
+      response = https.post({
+        url: datos.url,
+        body: datos.body
+      });
+    } catch (e) {
+      log.error(titulo, contexto + " | https.post lanzo: " + e.message);
+      throw e;
+    }
+
+    let motivo = null;
+    if (isEmpty(response)) {
+      motivo = "sin respuesta";
+    } else if (response.code !== 200) {
+      motivo = "codigo HTTP " + response.code;
+    } else {
+      try {
+        const cuerpo = JSON.parse(response.body);
+        if (!isEmpty(cuerpo) && !isEmpty(cuerpo.error) && cuerpo.error !== false) {
+          motivo = "el Suitelet respondio error: " + (typeof cuerpo.error === "string" ? cuerpo.error : (cuerpo.mensaje || JSON.stringify(cuerpo.error)));
+        }
+      } catch (e) {
+        motivo = "el body no es JSON valido";
+      }
+    }
+
+    if (motivo) {
+      const cuerpoLog = (isEmpty(response) || isEmpty(response.body)) ? "" : String(response.body).substring(0, 1000);
+      log.error(titulo, contexto + " | " + motivo + " | body: " + cuerpoLog);
+    }
+    return response;
+  }
+
   function afterSubmit(context) {
 
     esOneworldMemo = undefined;
@@ -1158,9 +1204,11 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
                   deploymentId: "customdeploy1",
                   returnExternalUrl: true
                 });
-                const response = https.post({
+                const response = invocarSuitelet({
+                  nombre: "Calcular Retenciones",
                   url: strURL,
-                  body: objInformacionPago
+                  body: objInformacionPago,
+                  idTransaccion: recId
                 });
 
                 const objRta = {};
@@ -1668,13 +1716,16 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
                                 deploymentId: "customdeploy_l598_crear_ret_detalle_slv2",
                                 returnExternalUrl: true
                               });
-                              const responseSLDetalle = https.post({
+                              // D3 (CRT-A10 U1) - antes se re-parseaba response.body (la respuesta de la
+                              // llamada 1, que ya se parseo arriba y no puede lanzar), descartando la
+                              // respuesta de este Suitelet. Ahora invocarSuitelet la valida y la deja en
+                              // el log; el flujo no depende de ella, igual que antes.
+                              invocarSuitelet({
+                                nombre: "Crear Retencion Detalle",
                                 url: suiteletUrlDetalle,
-                                body: objInformacionResguardo
+                                body: objInformacionResguardo,
+                                idTransaccion: recId
                               });
-                              // D3 - la variable no se usaba; se conserva la llamada porque
-                              // lanza si el body no es JSON valido y el catch externo lo registra.
-                              JSON.parse(response.body);
                             
                           }
 
@@ -1948,9 +1999,11 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
       deploymentId: "customdeploy_l598_crear_resguardo_sl_v2",
       returnExternalUrl: true
     });
-    const responseSL = https.post({
+    const responseSL = invocarSuitelet({
+      nombre: "Crear Resguardo",
       url: suiteletUrl,
-      body: objInformacionResguardo
+      body: objInformacionResguardo,
+      idTransaccion: "retencion " + idRetencionNueva
     });
     // D3 - la variable no se usaba; se conserva la llamada porque lanza si el
     // body no es JSON valido y el catch externo lo registra.
@@ -1983,9 +2036,11 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
             deploymentId: "customdeploy_l598_crear_pago_factura_slv",
             returnExternalUrl: true
           });
-          const responseSL = https.post({
+          const responseSL = invocarSuitelet({
+            nombre: "Crear Pago Factura",
             url: suiteletUrl,
-            body: objInformacionBill
+            body: objInformacionBill,
+            idTransaccion: datos.recId
           });
           // D3 - idem: se conserva la llamada, se quita la variable sin uso.
           JSON.parse(responseSL.body);
