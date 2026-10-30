@@ -327,8 +327,10 @@ define(["N/log", "N/search", "N/runtime", "N/record", "L598/utilities"],
 
         if (isNaN(n)) {
 
-          alert("La Cantidad debe ser un valor Numérico.");
-          return null;
+          log.error(proceso, "La Cantidad debe ser un valor Numérico.");
+          // TRS-A5: alert() no existe en el servidor; lanzaba ReferenceError y el catch terminaba
+          // devolviendo este mismo valor. Se loguea el motivo real y se conserva el retorno.
+          return "NO DISPONIBLE";
         }
         m0 = parseInt(n / 1000000000000);
         rm0 = n % 1000000000000;
