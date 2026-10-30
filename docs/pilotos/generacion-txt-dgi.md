@@ -177,3 +177,17 @@ Mismos parámetros en ambos: subsidiaria Parent Company : Uruguay, período Sep 
 - **Límite de la prueba:** el período tiene solo 2 líneas, así que no ejercita la ruta de >1000 resultados (GTX-A1), el filtro de rubro 514 ni la rama de publicidad con datos. La identidad está probada para este caso, no para todos.
 - **No medido:** GU y tiempo comparables (el original corrió por Suitelet + task, el `_REF` por schedule). La tabla de §5 sigue sin completar en esas filas.
 - **Estado del deployment 358:** Not Scheduled.
+
+### 8.1 Segunda caracterización: período Dic 2023 — 2026-10-30
+
+Período con más datos en la búsqueda guardada `customsearch_l598_beta_2181` (id 42): 6 filas en 202312 sobre 36 en total; ningún período se acerca a 1000. Mismos parámetros en ambos (Uruguay, Dic 2023, BETA 2181); el original por el Suitelet, el `_REF` por el deployment 358 con el parámetro Período cambiado y luego devuelto a Not Scheduled.
+
+| Corrida | Resultado |
+|---|---|
+| Original (Suitelet, 29/10 23:56) | Archivo 15793, 773 bytes, 12 líneas, log 3301; ~9 s |
+| `_REF` v2 (30/10 00:01) | Archivo 15794, 773 bytes, 12 líneas, log 3302; 17 s |
+
+- **Resultado:** contenido **idéntico** (misma longitud, mismas 12 líneas, mismo orden).
+- **Cobertura:** rubros 504, 505 y 506 y varios proveedores (incluye uno por nombre en vez de RUT); más ramas que el caso de Sep 2026. Sigue sin cubrir el caso de más de 1000 resultados (GTX-A1), el rubro 514 ni la rama de publicidad con datos.
+- **Tiempos:** 9 s del original contra 17 s del `_REF`, pero no son comparables (el original lo lanza un Suitelet con `task.create`; el `_REF` lo lanza el planificador, con distinta cola). Una sola muestra de cada uno: no se concluye nada sobre performance.
+
