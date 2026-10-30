@@ -195,5 +195,7 @@ Se aplicó **solo U1**, en `L598 - Calcular Retenciones (SS)V2_REF.js`. U2, U3 y
 
 **Validación.** Solo offline, con `tools/arnes-grupo-a.js`: el wrapper devuelve la misma respuesta en los 6 escenarios, relanza la excepción y loguea el motivo en cada falla (200 con `{"error":...}`, 500, body no JSON, `https.post` que lanza). **No se probó en la cuenta**: la búsqueda guardada id 20 impide generar retenciones, así que ninguna de las 4 llamadas se puede ejecutar de punta a punta.
 
+**Subida a la cuenta (2026-10-30).** El archivo 15573 (`L598 - Calcular Retenciones (SS)V2_REF.js`, usado por el script 707) pasó de 131.202 bytes, igual al commit anterior `4728612`, a 133.549 bytes, igual al local: contiene `invocarSuitelet`, 4 usos y un único `https.post(`. Se subió con el rol de Mobeats y los deployments siguen en Testing solo para ese rol; el archivo sigue sin ejecutarse de punta a punta.
+
 **Pendiente.** Aprobación formal de Tekiio de esta propuesta; U2 modifica los Suitelets originales (código productivo) y U4 depende de poder generar retenciones.
 
