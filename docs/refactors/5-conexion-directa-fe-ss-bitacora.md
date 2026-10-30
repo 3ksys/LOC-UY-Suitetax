@@ -77,7 +77,7 @@ Quedan **104 `var`**, cada uno con motivo: 33 nombres redeclarados en la misma f
 ### Pendiente
 
 - [x] **Desvío de deploy (2026-10-06):** los IDs de parámetro no se pueden duplicar en la cuenta; el `_REF` los lee por 12 constantes `PARAM_*`. Como los IDs originales ya tienen 37-40 caracteres, el sufijo `_ref` no entra: se usa el prefijo corto `custscript_l598_cdf_ref_` + la cola del original (20 llamadas a `getParameter` reemplazadas). Revertir al reemplazar al original. Regla y tabla de IDs en [carga y deploy §3.bis](../carga-y-deploy-de-scripts.md#3bis-parámetros-de-script-el-_ref-necesita-ids-propios).
-- [ ] Deploy aislado (Status `Testing`, Audience rol de pruebas) — necesita inventario de deployments (duda #7 del informe) y los logs de context filtering (CDF-A7).
+- [ ] Deploy aislado (Status `Testing`, Audience rol de pruebas) — necesita inventario de deployments (duda #7 del informe) (CDF-A7 fue retirado por Tekiio el 2026-10-26; el context filtering ya no es requisito de esa observación).
 - [ ] Caracterización: **Remito** (21.6s, el pico) y Factura de Venta nuevas — nunca re-guardar las bloqueadas por CAE 100000. Comparar **JSON y XML persistidos byte a byte** (el output se genera al guardar, sin CAE).
 - [ ] Medición GU: esperado ahorro **real pero acotado** — 1 búsqueda por `afterSubmit` (B3) y 1 `config.load` por cada log FE (B4, hasta 24 por guardado). El salto es B1 (🔴).
 

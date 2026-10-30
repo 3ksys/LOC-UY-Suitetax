@@ -159,3 +159,21 @@ Cada Suitelet tiene su propio presupuesto de 1000 unidades por invocación. El U
 U1, U2 y U4 pueden avanzar ya. U3 espera las decisiones del §4.
 
 **Validación en la cuenta:** se fuerza cada tipo de falla (deployment deshabilitado → no-200, parámetro inválido → 500, error de negocio → `{"error":true}`) y se verifica el log, el estado resultante de los registros y lo que ve el usuario.
+
+---
+
+## 8. Verificado en la cuenta (solo lectura) — 2026-10-30
+
+**Nombre del Suitelet (§1).** En la cuenta el script `customscript_l598_crear_resguardo_sl_v2` (id 172) usa el archivo `L598 - Crear Resguardo (SL)V2.js`. En el listado de scripts no aparece ningún archivo `V2_2`. La duda queda resuelta salvo que Tekiio mencione un archivo fuera del listado.
+
+**Suitelets publicados sin login (§6).** Los 4 deployments tienen **"Available Without Login" activado** (campo `isonline`):
+
+| Suitelet | Script | Deployment | Estado | Sin login |
+|---|---|---|---|:--:|
+| Calcular Retenciones (SL) | 26 | 44 | Released | Sí |
+| Crear Retención Detalle (SL) V2 | 171 | 172 | Released | Sí |
+| Crear Resguardo (SL) V2 | 172 | 173 | Released | Sí |
+| Crear Pago Factura (SL) V2 | 173 | 174 | Released | Sí |
+
+Es coherente con que el UE los invoque con `returnExternalUrl: true` y sin credenciales: **la arquitectura actual lo necesita**. Pasa a ser un hallazgo de seguridad concreto: quien conozca la URL externa de un deployment puede crear URU-Retenciones, Resguardos o pagos. No se tocó nada. Cambiarlo exige rediseñar la autenticación entre el UE y los Suitelets, así que va como propuesta aparte y con decisión de Tekiio. Verificado en la cuenta de desarrollo; la de producción puede diferir.
+
