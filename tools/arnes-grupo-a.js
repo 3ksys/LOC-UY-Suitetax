@@ -23,7 +23,9 @@ const isEmpty = (v) => v === '' || v === null || v === undefined || v === 'null'
 
 // Carga el _REF de una revision exportando funciones internas (se inyecta antes del return del modulo).
 function cargar(script, rev, nombres, inyectar) {
-  let src = execFileSync('git', ['show', `${rev}:${FILE[script]}`], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  // rev 'WORKTREE' = archivo tal como esta en disco (cambios sin commitear)
+  let src = rev === 'WORKTREE' ? require('fs').readFileSync(FILE[script], 'utf8')
+    : execFileSync('git', ['show', `${rev}:${FILE[script]}`], { encoding: 'utf8', maxBuffer: 1 << 26 });
   const idx = [...src.matchAll(/\n\s*return \{\s*\n/g)].pop().index;
   src = src.slice(0, idx) + `\nglobalThis.__t={${nombres.join(',')}};\n` + src.slice(idx);
   const logs = [];
@@ -211,3 +213,67 @@ console.log('\n=== TRS-A5 getNumberLiteral (entrada no numerica) ===');
   fila('salida identica en 7 numeros validos', 'n/a', iguales ? 'SI' : 'NO (revisar)');
 }
 
+
+// ---- CRT-A4 / CRT-A5 / CRT-B1 ----
+// Se ejecutan las funciones REALES antes (HEAD) y despues (archivo en disco) con N/search, N/record, N/https simulados.
+const REV_ABC = { antes: 'HEAD', despues: 'WORKTREE' };
+const injCrt = (o) => (log) => [log, o.record || {}, o.search || {}, o.runtime || { getCurrentScript() { return { getParameter() { return null; } }; } },
+  {}, {}, o.url || {}, o.https || {}];
+
+console.log('\n=== CRT-A4 flags de configuracion (calcularGenerarResguardo / aplicarRetencionFactura) ===');
+{
+  const escenarios = [['sin registro de config', null], ['valor "F"', 'F'], ['valor "T"', 'T'], ['valor true', true], ['valor false', false], ['valor vacio ""', '']];
+  const mkSearch = (val) => ({ Operator: {}, createFilter: (o) => o,
+    create: () => ({ run: () => ({ getRange: () => (val === null ? [] : [{ getValue: () => val }]) }) }) });
+  for (const [nombre, val] of escenarios) {
+    const r = (rev) => { const t = cargar('crt', rev, ['calcularGenerarResguardoAutomaticamente', 'aplicarRetencionFacturaAutomaticamente'], injCrt({ search: mkSearch(val) })).t;
+      return `${t.calcularGenerarResguardoAutomaticamente(1)}/${t.aplicarRetencionFacturaAutomaticamente(1)}`; };
+    fila(nombre + ' (generar/aplicar)', r(REV_ABC.antes), r(REV_ABC.despues));
+  }
+}
+
+console.log('\n=== CRT-A5 generarResguardoAutomatico (JSON enviado al Suitelet) ===');
+{
+  const vendor = { address1: 'Calle 1', city: 'Montevideo', country: [{ value: 'UY', text: 'Uruguay' }], zipcode: '11000' };
+  const escenarios = [
+    ['campos vacios en la retencion (fallback)', {}],
+    ['campos completos en la retencion', { custbody_l598_resguardo_direccion_prov: 'D', custbody_l598_resguardo_ciudad: 'C', custbody_l598_resguardo_pais: 'P', custbody_l598_resguardo_cod_postal: 'Z' }],
+    ['solo ciudad cargada', { custbody_l598_resguardo_ciudad: 'C' }]
+  ];
+  const correr = (rev, campos) => {
+    const lookups = []; let enviado;
+    const record = { load: () => ({ id: 9, getValue: (f) => campos[f] || '', getLineCount: () => 0, getSublistValue() {} }) };
+    const search = { lookupFields: (o) => { lookups.push(o.type + ':' + o.columns.join(',')); return o.type === 'vendor' ? Object.fromEntries(o.columns.map((c) => [c, vendor[c]])) : { recordtype: 'vendorbill' }; } };
+    const https = { post: (o) => { enviado = JSON.parse(o.body.newResguardo); return { code: 200, body: '{}' }; } };
+    const runtime = { getCurrentUser() { return 1; }, getCurrentScript() { return { getParameter() { return null; } }; } };
+    const t = cargar('crt', rev, ['generarResguardoAutomatico'], injCrt({ record, search, https, runtime, url: { resolveScript: () => 'u' } })).t;
+    t.generarResguardoAutomatico('x', 9);
+    return { enviado, lookups };
+  };
+  for (const [nombre, campos] of escenarios) {
+    const a = correr(REV_ABC.antes, campos), d = correr(REV_ABC.despues, campos);
+    console.log(' ' + nombre);
+    for (const k of ['direccion', 'ciudad', 'pais', 'codigoPostal', 'origenRetencion']) fila('   ' + k, JSON.stringify(a.enviado[k]), JSON.stringify(d.enviado[k]));
+    fila('   lecturas (lookupFields)', a.lookups.length + ' [vendor x' + a.lookups.filter((x) => x.startsWith('vendor')).length + ']', d.lookups.length + ' [vendor x' + d.lookups.filter((x) => x.startsWith('vendor')).length + ']');
+  }
+}
+
+console.log('\n=== CRT-B1 getRange de customsearch_l598_transaction_det_ret ===');
+{
+  const fuente = (rev) => rev === 'WORKTREE' ? require('fs').readFileSync(FILE.crt, 'utf8') : execFileSync('git', ['show', `${rev}:${FILE.crt}`], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  // getRange(end) de los 2 usos de la SS (beforeLoad y afterSubmit)
+  const ends = (rev) => [...fuente(rev).matchAll(/id: "customsearch_l598_transaction_det_ret"[\s\S]*?end: (\d+)/g)].map((m) => m[1]).join(' y ');
+  fila('end del getRange (beforeLoad y afterSubmit)', ends(REV_ABC.antes), ends(REV_ABC.despues));
+  // beforeLoad: el boton "Calcular Retenciones" depende de la fila elegida. Con 1 sola fila no cambia; con 2 puede cambiar.
+  const columnas = Array.from({ length: 18 }, (_, i) => i);
+  const fil = (cod, ret) => ({ columns: columnas, getValue: (c) => ({ 12: cod, 17: ret }[c] || '') });
+  const escenarios = [['1 fila con codigo sin retencion', [fil('A', '')]], ['1 fila con retencion', [fil('A', 5)]], ['2 filas: [sin ret, con ret]', [fil('A', ''), fil('A', 5)]], ['2 filas: [con ret, sin ret]', [fil('A', 5), fil('A', '')]]];
+  for (const [nombre, filas] of escenarios) {
+    const r = (rev) => { let boton = false;
+      const search = { Operator: { ANYOF: 'anyof' }, createFilter: (o) => o, load: () => ({ filters: [], run: () => ({ getRange: ({ start, end }) => filas.slice(start, end) }) }) };
+      const t = cargar('crt', rev, ['beforeLoad'], injCrt({ search })).t;
+      t.beforeLoad({ type: 'view', newRecord: { id: 1, type: 'vendorbill', getValue: () => 1 }, form: { addButton() { boton = true; } } });
+      return boton ? 'muestra boton' : 'sin boton'; };
+    fila('beforeLoad: ' + nombre, r(REV_ABC.antes), r(REV_ABC.despues));
+  }
+}

@@ -991,9 +991,10 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
 
         loadSearch.filters.push(filtro);
 
+        // CRT-B1: solo se usa una fila; se acota el getRange (antes 0..1000)
         const results = loadSearch.run().getRange({
           start: 0,
-          end: 1000
+          end: 1
         });
 
         let retencion;
@@ -1006,8 +1007,8 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
         if (!isEmpty(results) && results.length > 0) {
           log.audit("l598beforeLoad", "LOG DE CONTROL 2");
 
-          // semantica original: ultima fila; afterSubmit usa la primera (CRT-D9)
-          const resultSearch = results[results.length - 1];
+          // CRT-B1: con end:1 la unica fila es la primera, como en afterSubmit (antes decidia con la ultima, CRT-D9)
+          const resultSearch = results[0];
           const columns = resultSearch.columns;
           codRetIRAE = resultSearch.getValue(columns[12]); //URU-COD RET IRAE
           codRetIRNR = resultSearch.getValue(columns[13]); //URU-COD RET IRNR
@@ -1137,9 +1138,10 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
         const resultadoSearch = loadSearch.run();
 
 
+        // CRT-B1: solo se usa results[0]
         const results = resultadoSearch.getRange({
           start: 0,
-          end: 1000
+          end: 1
         });
 
         let subsidiariaPago = "";
@@ -1960,13 +1962,21 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
     const direccion_prov_transaccion = registroRetencion.getValue('custbody_l598_resguardo_direccion_prov');
     const proveedorID = registroRetencion.getValue('custbody_l598_resguardo_proveedor');
 
-    objDetail.direccion = direccion_prov_transaccion ? direccion_prov_transaccion : (search.lookupFields({ type: 'vendor', id: proveedorID, columns: ['address1'] }) || '');
     const ciudad_transaccion = registroRetencion.getValue('custbody_l598_resguardo_ciudad');
-    objDetail.ciudad = ciudad_transaccion ? ciudad_transaccion : (search.lookupFields({ type: 'vendor', id: proveedorID, columns: ['city'] })|| '');
     const country_transaccion = registroRetencion.getValue('custbody_l598_resguardo_pais');
-    objDetail.pais = country_transaccion ? country_transaccion : (search.lookupFields({ type: 'vendor', id: proveedorID, columns: ['country'] }) || '');
     const codigo_transaccion = registroRetencion.getValue('custbody_l598_resguardo_cod_postal');
-    objDetail.codigoPostal = codigo_transaccion ? codigo_transaccion : (search.lookupFields({ type: 'vendor', id: proveedorID, columns: ['zipcode'] }) || '');
+
+    // CRT-A5: lookupFields devuelve un objeto ({address1: ...}); se viajaba entero en el JSON.
+    // Ahora una sola lectura del proveedor (solo si algun dato falta) y se extrae el escalar.
+    let proveedor = {};
+    if (!direccion_prov_transaccion || !ciudad_transaccion || !country_transaccion || !codigo_transaccion) {
+      proveedor = search.lookupFields({ type: 'vendor', id: proveedorID, columns: ['address1', 'city', 'country', 'zipcode'] }) || {};
+    }
+    objDetail.direccion = direccion_prov_transaccion ? direccion_prov_transaccion : (proveedor.address1 || '');
+    objDetail.ciudad = ciudad_transaccion ? ciudad_transaccion : (proveedor.city || '');
+    // country es de tipo lista: el lookup devuelve [{value, text}]
+    objDetail.pais = country_transaccion ? country_transaccion : ((proveedor.country && proveedor.country.length > 0) ? proveedor.country[0].value : '');
+    objDetail.codigoPostal = codigo_transaccion ? codigo_transaccion : (proveedor.zipcode || '');
     objDetail.importeIRPF = parseFloat(registroRetencion.getValue('custbody_l598_retencion_imp_ret_irpf'));
     objDetail.importeIRNR = parseFloat(registroRetencion.getValue('custbody_l598_retencion_imp_ret_irnr'));
     objDetail.importeIRAE = parseFloat(registroRetencion.getValue('custbody_l598_retencion_imp_ret_irae'));
@@ -1975,7 +1985,7 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
     objDetail.fechaEmisionResguardo = registroRetencion.getValue('trandate');
 
     const transactionLookup = search.lookupFields({ type: 'transaction', id: registroRetencion.getValue('custbody_l598_transaccion_origen_reten'), columns: ['recordtype'] });
-    objDetail.origenRetencion = transactionLookup;
+    objDetail.origenRetencion = transactionLookup.recordtype;
 
     objDetail.auxKey = 1;
 
@@ -2614,7 +2624,8 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
   }
 
   function calcularGenerarResguardoAutomaticamente(subsidiaria) {
-    let calcular_generar_resguardo_automaticamente = "F";
+    // CRT-A4: boolean desde el inicio; el string "F" era truthy y devolvia true sin configuracion.
+    let calcular_generar_resguardo_automaticamente = false;
     const filters = [["isinactive", "is", "F"]];
 
     if (!isEmpty(subsidiaria)) {
@@ -2631,18 +2642,14 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
     });
 
     if (results != null && results.length > 0) {
-      calcular_generar_resguardo_automaticamente = results[0].getValue("custrecord_l598_conf_proc_ret_cal_res_au");
+      calcular_generar_resguardo_automaticamente = convertToBoolean(results[0].getValue("custrecord_l598_conf_proc_ret_cal_res_au"));
     }
-    log.debug('condicion',!isEmpty(calcular_generar_resguardo_automaticamente) && calcular_generar_resguardo_automaticamente )
-    if (!isEmpty(calcular_generar_resguardo_automaticamente) && calcular_generar_resguardo_automaticamente) {
-      return true;
-    } else {
-      return false;
-    }
+    return calcular_generar_resguardo_automaticamente;
   }
   
     function aplicarRetencionFacturaAutomaticamente(subsidiaria) {
-      let aplicar_retencion_factura_automaticamente = "F";
+      // CRT-A4: idem calcularGenerarResguardoAutomaticamente.
+      let aplicar_retencion_factura_automaticamente = false;
       const filters = [["isinactive", "is", "F"]];
 
       if (!isEmpty(subsidiaria)) {
@@ -2659,14 +2666,10 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
       });
   
       if (results != null && results.length > 0) {
-        aplicar_retencion_factura_automaticamente = results[0].getValue("custrecord_l598_conf_proc_ret_ap_ret_fac");
+        aplicar_retencion_factura_automaticamente = convertToBoolean(results[0].getValue("custrecord_l598_conf_proc_ret_ap_ret_fac"));
       }
-      
-      if (!isEmpty(aplicar_retencion_factura_automaticamente) && aplicar_retencion_factura_automaticamente) {
-        return true;
-      } else {
-        return false;
-      }
+
+      return aplicar_retencion_factura_automaticamente;
     }
 
   return {
