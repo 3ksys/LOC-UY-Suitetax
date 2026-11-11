@@ -200,6 +200,6 @@ Regla de la metodología §7: elegir casos donde los bugs del Grupo A **no se di
 4. ¿Quién setea `custbody_l598_cal_ret_auto`? (¿formulario, workflow, otro script?) — define cuándo se dispara el flujo automático.
 5. ¿La validación ERR002 funcionó alguna vez? (CRT-A1) ¿Hay expectativa funcional de que bloquee la edición de Resguardos?
 6. Confirmar en logs de la cuenta los errores esperados por CRT-A2 ("Ocurrio un error al borrar URU-Retencion Detalle…") y CRT-A11, para convertir las inferencias de runtime en hechos.
-7. La SS `customsearch_l598_transaction_det_ret`, ¿devuelve siempre 1 fila por transacción? `beforeLoad` decide con la última fila y `afterSubmit` con la primera (CRT-D9) — con >1 fila podrían decidir distinto.
+7. *(Respondida 11/11/2026: sí. La SS id 20 es de tipo resumen y agrupa por Internal ID; en la cuenta, 457 de 669 filas cargadas sin ningún ID repetido. Con una fila, `beforeLoad` y `afterSubmit` deciden igual.)* La SS `customsearch_l598_transaction_det_ret`, ¿devuelve siempre 1 fila por transacción? `beforeLoad` decide con la última fila y `afterSubmit` con la primera (CRT-D9) — con >1 fila podrían decidir distinto.
 8. Inventariar los deployments reales del script en la cuenta (tipos de registro y contextos) antes de crear los del `_REF`.
 9. Para UAT 05 (Resguardo observado por CAE): confirmar con Tekiio el caso alternativo para caracterizar creación de Resguardo sin re-guardar el observado.
