@@ -216,7 +216,7 @@ console.log('\n=== TRS-A5 getNumberLiteral (entrada no numerica) ===');
 
 // ---- CRT-A4 / CRT-A5 / CRT-B1 ----
 // Se ejecutan las funciones REALES antes (HEAD) y despues (archivo en disco) con N/search, N/record, N/https simulados.
-const REV_ABC = { antes: 'HEAD', despues: 'WORKTREE' };
+const REV_ABC = { antes: '9e4b84a~1', despues: '9e4b84a' };
 const injCrt = (o) => (log) => [log, o.record || {}, o.search || {}, o.runtime || { getCurrentScript() { return { getParameter() { return null; } }; } },
   {}, {}, o.url || {}, o.https || {}];
 

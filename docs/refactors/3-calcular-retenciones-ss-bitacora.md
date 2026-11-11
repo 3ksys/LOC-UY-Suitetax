@@ -185,3 +185,13 @@ Estado ANTES: SIN INFORMAR A DGI, 09/11/2026, proveedor "a proveedor 12", USD. *
 - **Validación:** `tools/arnes-grupo-a.js` (sección CRT-A10 U1): 6 escenarios de respuesta y conteo de los `JSON.parse(responseSL.body)` que deciden el flujo (2 antes, 2 después). Los `https.post(` directos pasaron de 4 a 1 (el del wrapper).
 - **No probado en la cuenta:** ninguna de las 4 llamadas se puede ejecutar de punta a punta (búsqueda guardada id 20 desalineada). Ver [propuesta §9](../propuestas/CRT-A10-validacion-llamadas-suitelets.md).
 
+
+## CRT-A4, CRT-A5 y CRT-B1 — 2026-11-11
+
+- **Cambio (`9e4b84a`):** según lo aprobado por Desarrollo de Tekiio.
+  - **CRT-A5:** `generarResguardoAutomatico` hace una sola lectura del proveedor (solo si falta algún dato) y envía escalares (`address1`, `city`, `zipcode`, `country[0].value`). `origenRetencion` pasa a `.recordtype`.
+  - **CRT-A4:** `calcularGenerarResguardoAutomaticamente` y `aplicarRetencionFacturaAutomaticamente` parten de `false` y usan `convertToBoolean`.
+  - **CRT-B1:** `getRange(0, 1)` en `beforeLoad` y `afterSubmit`.
+- **Validación:** `tools/arnes-grupo-a.js`, secciones CRT-A4 / A5 / B1 (antes `9e4b84a~1`, después `9e4b84a`). A4: sin registro de configuración o con "F" pasa de `true` a `false`, el resto igual. A5: el JSON lleva texto en lugar de objetos y las lecturas del proveedor bajan de 4 a 1. B1: `afterSubmit` idéntico; `beforeLoad` con dos filas puede mostrar u ocultar el botón.
+- **Riesgos abiertos:** (a) A4 cambia el flujo automático de las subsidiarias sin configuración; (b) B1 en `beforeLoad` depende de si la búsqueda devuelve más de una fila (pregunta 7 de `3-calcular-retenciones-ss.md`); (c) nada se probó en la cuenta (búsqueda guardada id 20 desalineada).
+- **Pendiente de decisión:** agregar "script" al título de `customsearch_l598_transaction_det_ret` (recomendación de Desarrollo; es un cambio en la cuenta).
