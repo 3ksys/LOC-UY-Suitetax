@@ -203,4 +203,5 @@ Estado ANTES: SIN INFORMAR A DGI, 09/11/2026, proveedor "a proveedor 12", USD. *
 - **Cambio:** `calcularGenerarResguardoAutomaticamente` y `aplicarRetencionFacturaAutomaticamente` vuelven al texto que tenían antes de `b42c82e` (filtro plano, default `"F"`, `if` final). El resto del archivo no se toca: siguen aplicados CRT-A1, A2, A5, A6, A8, A11, B1 y U1 de CRT-A10.
 - **Validación:** `tools/arnes-grupo-a.js`, sección "Reversión CRT-A3 / CRT-A4": 12 de 12 escenarios (con y sin subsidiaria; sin registro, "F", "T", true, false y vacío) dan el mismo resultado y los mismos filtros que `b42c82e~1`. El diff de las dos funciones contra esa revisión es vacío.
 - **Efecto:** vuelve el comportamiento original: en OneWorld la búsqueda de configuración falla con el filtro plano y, sin registro de configuración, los flags dan `true`. Lo toma Tekiio.
-- **CRT-A6 y CRT-A8:** Producto los aprobó; ya estaban aplicados y quedan cerrados.
+- **Subido a la cuenta (17/11/2026):** archivo 15573, 133.883 → 134.261 bytes (igual al local). Contenido publicado: filtro plano de A3 presente, default de A4 ausente, A5, B1 y U1 presentes.
+- **CRT-A6 y CRT-A8:** Producto los aprobó; ya estaban aplicados y quedan cerrados. La planilla también muestra aprobados por Producto a CRT-A1 y CRT-A5 (siguen aplicados).
