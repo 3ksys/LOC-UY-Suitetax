@@ -2623,13 +2623,15 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
     }
   }
 
+  // CRT-A3 y CRT-A4: revertidos el 17/11/2026. Producto los rechazo (los toma Tekiio):
+  // afectan la configuracion por subsidiaria y la generacion automatica de resguardos.
+  // Las dos funciones quedan como en el original.
   function calcularGenerarResguardoAutomaticamente(subsidiaria) {
-    // CRT-A4: boolean desde el inicio; el string "F" era truthy y devolvia true sin configuracion.
-    let calcular_generar_resguardo_automaticamente = false;
-    const filters = [["isinactive", "is", "F"]];
-
+    let calcular_generar_resguardo_automaticamente = "F";
+    const filters = ["isinactive", "is", "F"];
+    
     if (!isEmpty(subsidiaria)) {
-      filters.push("AND", ["custrecord_l598_conf_proc_ret_subsidiari", "is", subsidiaria]);
+      filters.push("custrecord_l598_conf_proc_ret_subsidiari", "is", subsidiaria);
     }
 
     const results = search.create({
@@ -2642,18 +2644,22 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
     });
 
     if (results != null && results.length > 0) {
-      calcular_generar_resguardo_automaticamente = convertToBoolean(results[0].getValue("custrecord_l598_conf_proc_ret_cal_res_au"));
+      calcular_generar_resguardo_automaticamente = results[0].getValue("custrecord_l598_conf_proc_ret_cal_res_au");
     }
-    return calcular_generar_resguardo_automaticamente;
+    log.debug('condicion',!isEmpty(calcular_generar_resguardo_automaticamente) && calcular_generar_resguardo_automaticamente )
+    if (!isEmpty(calcular_generar_resguardo_automaticamente) && calcular_generar_resguardo_automaticamente) {
+      return true;
+    } else {
+      return false;
+    }
   }
   
     function aplicarRetencionFacturaAutomaticamente(subsidiaria) {
-      // CRT-A4: idem calcularGenerarResguardoAutomaticamente.
-      let aplicar_retencion_factura_automaticamente = false;
-      const filters = [["isinactive", "is", "F"]];
-
+      let aplicar_retencion_factura_automaticamente = "F";
+      const filters = ["isinactive", "is", "F"];
+      
       if (!isEmpty(subsidiaria)) {
-        filters.push("AND", ["custrecord_l598_conf_proc_ret_subsidiari", "is", subsidiaria]);
+        filters.push("custrecord_l598_conf_proc_ret_subsidiari", "is", subsidiaria);
       }
 
       const results = search.create({
@@ -2666,10 +2672,14 @@ define(["N/log", "N/record", "N/search", "N/runtime", "N/error", "N/format", "N/
       });
   
       if (results != null && results.length > 0) {
-        aplicar_retencion_factura_automaticamente = convertToBoolean(results[0].getValue("custrecord_l598_conf_proc_ret_ap_ret_fac"));
+        aplicar_retencion_factura_automaticamente = results[0].getValue("custrecord_l598_conf_proc_ret_ap_ret_fac");
       }
-
-      return aplicar_retencion_factura_automaticamente;
+      
+      if (!isEmpty(aplicar_retencion_factura_automaticamente) && aplicar_retencion_factura_automaticamente) {
+        return true;
+      } else {
+        return false;
+      }
     }
 
   return {

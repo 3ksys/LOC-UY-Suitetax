@@ -277,3 +277,24 @@ console.log('\n=== CRT-B1 getRange de customsearch_l598_transaction_det_ret ==='
     fila('beforeLoad: ' + nombre, r(REV_ABC.antes), r(REV_ABC.despues));
   }
 }
+
+// ---- Reversion de CRT-A3 y CRT-A4 (17/11/2026) ----
+// Producto los rechazo. Las dos funciones de configuracion deben comportarse como antes de b42c82e (original):
+// mismos flags y mismos filtros enviados a search.create. Se compara el archivo en disco contra b42c82e~1.
+console.log('\n=== Reversion CRT-A3 / CRT-A4: archivo actual vs original (b42c82e~1) ===');
+{
+  const escenarios = [['sin registro de config', null], ['valor "F"', 'F'], ['valor "T"', 'T'], ['valor true', true], ['valor false', false], ['valor vacio ""', '']];
+  for (const [subs, nombreSubs] of [[1, 'con subsidiaria'], [undefined, 'sin subsidiaria']]) {
+    for (const [nombre, val] of escenarios) {
+      const r = (rev) => {
+        const filtros = [];
+        const search = { Operator: {}, createFilter: (o) => o,
+          create: (o) => { filtros.push(JSON.stringify(o.filters)); return { run: () => ({ getRange: () => (val === null ? [] : [{ getValue: () => val }]) }) }; } };
+        const t = cargar('crt', rev, ['calcularGenerarResguardoAutomaticamente', 'aplicarRetencionFacturaAutomaticamente'], injCrt({ search })).t;
+        return `${t.calcularGenerarResguardoAutomaticamente(subs)}/${t.aplicarRetencionFacturaAutomaticamente(subs)} filtros=${filtros[0]}`;
+      };
+      const a = r('b42c82e~1'), d = r('WORKTREE');
+      fila(`${nombreSubs}, ${nombre}`, a.slice(0, 48), a === d ? 'IGUAL' : 'DISTINTO: ' + d);
+    }
+  }
+}

@@ -196,3 +196,11 @@ Estado ANTES: SIN INFORMAR A DGI, 09/11/2026, proveedor "a proveedor 12", USD. *
 - **Subido a la cuenta (11/11/2026):** archivo 15573, 133.549 → 133.883 bytes (igual al local). Se comprobó en el contenido publicado la presencia de A4, A5, B1 y U1, y que ya no queda ningún `end: 1000` en las lecturas de la búsqueda.
 - **Riesgos abiertos:** (a) A4 cambia el flujo automático de las subsidiarias sin configuración; (b) ~~B1 en `beforeLoad` depende de si la búsqueda devuelve más de una fila~~: verificado el 11/11/2026, la SS id 20 está agrupada por Internal ID (una fila por transacción), así que B1 no cambia el comportamiento; (c) nada se probó en la cuenta (búsqueda guardada id 20 desalineada).
 - **Pendiente de decisión:** agregar "script" al título de `customsearch_l598_transaction_det_ret` (recomendación de Desarrollo; es un cambio en la cuenta).
+
+## CRT-A3 y CRT-A4 revertidos — 2026-11-17
+
+- **Motivo:** Producto (Maxi) los rechazó: "Recomendamos tomarlo nosotros". A3 afecta la configuración por subsidiaria que controla los resguardos automáticos; A4 cambia la generación automática cuando no hay configuración.
+- **Cambio:** `calcularGenerarResguardoAutomaticamente` y `aplicarRetencionFacturaAutomaticamente` vuelven al texto que tenían antes de `b42c82e` (filtro plano, default `"F"`, `if` final). El resto del archivo no se toca: siguen aplicados CRT-A1, A2, A5, A6, A8, A11, B1 y U1 de CRT-A10.
+- **Validación:** `tools/arnes-grupo-a.js`, sección "Reversión CRT-A3 / CRT-A4": 12 de 12 escenarios (con y sin subsidiaria; sin registro, "F", "T", true, false y vacío) dan el mismo resultado y los mismos filtros que `b42c82e~1`. El diff de las dos funciones contra esa revisión es vacío.
+- **Efecto:** vuelve el comportamiento original: en OneWorld la búsqueda de configuración falla con el filtro plano y, sin registro de configuración, los flags dan `true`. Lo toma Tekiio.
+- **CRT-A6 y CRT-A8:** Producto los aprobó; ya estaban aplicados y quedan cerrados.
